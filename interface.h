@@ -29,16 +29,24 @@ class INTERFACE
   
   int number_of_vertices;	// number of points used to discretize the interface
   
+  double bare_charge;		// bare charge on the membrane (interface)
+  
   bool POLARIZED;		// is the nanoparticle polarized; depends on ein, eout
   
+  bool RANDOMIZE_ION_FEATURES; 	// are selections randomized
+  
   void set_up(double, double, double, double, int, double);
-  void put_counterions(PARTICLE&, vector<PARTICLE>&, int, double, vector<PARTICLE>&);
+  void put_counterions(vector<PARTICLE>&, int, double, vector<PARTICLE>&);
   void put_saltions_inside(vector<PARTICLE>&, int, double, double, vector<PARTICLE>&);
   void put_saltions_outside(vector<PARTICLE>&, int, double, double, vector<PARTICLE>&);
   void discretize(vector<VERTEX>&);
   
-  INTERFACE(VECTOR3D posvec = VECTOR3D(0,0,0), double radius = 0, double ein = 1, double eout = 1) : posvec(posvec), radius(radius), ein(ein), eout(eout)
+  INTERFACE(VECTOR3D get_posvec = VECTOR3D(0,0,0), double get_radius = 0, double get_ein = 1, double get_eout = 1)
   {
+    posvec = get_posvec;
+    radius = get_radius;
+    ein = get_ein;
+    eout = get_eout;
   }
   
   // total charge inside

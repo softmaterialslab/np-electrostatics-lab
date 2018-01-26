@@ -1,26 +1,37 @@
 // This is main.
 // This is Car Parrinello molecular dynamics for simulating dynamics of ions near a nanoparticle (NP) surface
-// Problem : Compute the density profile of ions around a NP
+// This will power app 2: nanosphere electrostatics lab. the app is part of the nanoparticle characterization framework.
+// The framework is expected to launch nanorod electrostatics lab, nanodisc electrostatics lab etc. apps
+// Problem : Compute the density profile of ions around a NP; and estimate a zeta potential or effective charge of the ion
 /* Useful studies :	
 		     1. Role of dielectric contrast
 		     2. Role of valency of ions
 		     3. Role of varying salt concentration
 		     4. Role of NP charge
 */
+  
+  /* @kadupitiya
+   * e = E = 78.5 does simple MD; e != E invokes cpmd
+   * these parameters produce good converged results that can be compared against the available data (which is plotted in the image sent separately):
+   * -a 2.6775 -b 14.28 -e 2 -E 78.5 -V -60 -v 1 -g 1082 -m 6 -t 0.001 -s 10000 -p 100 -f 10 -M 6 -T 0.001 -k 0.0025 -q 0.001 -L 5 -l 5 -S 10000000 -P 100000 -F 100 -X 10000 -U 1000 -Y 500000 -W 1000000 -B 0.025
+   * change valency v to 1 (red in image), 2 (green), 3 (blue); everything else can remain the same
+   * m = M, k, t = T, q depend on g (the grid size); g depends on e & E, and a. higher the dielectric contrast, that is difference between e and E, higher g is needed to resolve the induced charge density. 
+   * the selection of these 5 parameters is made manually by monitoring energies, trial and error-- I spent a lot of time just doing that before submitting a useful run to get the ion density. i think there is a possibility of using ML to select these 5 CPMD parameters judiciously. we can pursue this tangentially to nanohub project; hoping it spirals into one of our collaborative hpc/ml projects.
+   * the default parameters right now in boost are for a fast simulation that works. as you see they are different than the above parameters for different g etc.:
+   * -a 2.6775 -b 14.28 -e 2 -E 78.5 -V -60 -v 1 -g 132 -m 1 -t 0.001 -s 10000 -p 100 -f 10 -M 1 -T 0.001 -k 0.01 -q 1 -L 5 -l 5 -S 50000 -P 10000 -F 100 -X 1000 -U 1000 -Y 10000 -W 10000 -B 0.1
+   * the quick_check_polarized_data has a short run from these paramaters for you to perform a quick check against any code changes, if you want.
+   * the following is slightly slower but produces a better profile (still far from converged):
+   * -a 2.6775 -b 14.28 -e 2 -E 78.5 -V -60 -v 1 -g 132 -m 1 -t 0.001 -s 10000 -p 100 -f 10 -M 1 -T 0.001 -k 0.01 -q 1 -L 5 -l 5 -S 200000 -P 100000 -F 100 -X 10000 -U 10000 -Y 100000 -W 10000 -B 0.1
+   * for cpmd, successful simulation demands more than energy conservation:
+   * 	1. _ind_*.dat files in verifiles should roughly match the _cpmd_*.dat files in computedfiles
+   * 	2. total_induced_charge.dat in outfiles should be very close to 0
+   * 	3. track_deviation.dat in outfiles should be small (< 1) and stable-- usually this will happen if the above 2 criteria hold; see also average deviation before R in the output at the end-- should be small
+   * 	4. and of course, R should be small like before (could be a bit higher than normal MD)
+   */
 
 #include <boost/program_options.hpp>
-#include "utility.h"
-#include "interface.h"
-#include "particle.h"
-#include "vertex.h"
-#include "BIN.h"
-#include "control.h"
 #include "functions.h"
 #include "precalculations.h"
-#include "thermostat.h"
-#include "fmd.h"
-
-void cpmd(vector<PARTICLE>&, vector<VERTEX>&, INTERFACE&, vector<THERMOSTAT>&, vector<THERMOSTAT>&, vector<BIN>&, PARTICLE&, CONTROL&, CONTROL&);
 
 using namespace boost::program_options;
 
@@ -32,7 +43,6 @@ int main(int argc, char* argv[])
   double eout; 			// permittivity of outside medium
   int counterion_valency;	// counterion valency (positive by convention)
   double counterion_diameter;	// counterion diameter
-  int colloid_valency;		// valency of the colloid (negative by convention in case of colloid problem). for interface problem set this variable to zero
   int salt_valency_in;		// salt valency inside
   int salt_valency_out;		// salt valency outside
   double salt_conc_in;		// salt concentration outside	(enter in M)
@@ -54,8 +64,7 @@ int main(int argc, char* argv[])
   CONTROL cpmdremote;		// remote control for cpmd
 
   // Different parts of the system
-  INTERFACE dsphere;		// interface(s)
-  PARTICLE colloid;		// nano object (acts as interface)
+  INTERFACE nanoparticle;		// interface(s)
   vector<PARTICLE> counterion;	// counterions
   vector<PARTICLE> saltion_in;	// salt ions inside
   vector<PARTICLE> saltion_out;	// salt ions outside
@@ -64,18 +73,16 @@ int main(int argc, char* argv[])
   
   // Analysis
   vector<BIN> bin;		// bins		
-  char short_run;		// run length if short invokes post analysis
   
   // Get input values from the user
   options_description desc("Usage:\nrandom_mesh <options>");
   desc.add_options()
       ("help,h", "print usage message")
-      ("short_run,r", value<char>(&short_run)->default_value('n'), "short run?")
-      ("radius,a", value<double>(&radius)->default_value(3.57), "sphere radius")				// enter in nanometers
-      ("epsilon_in,e", value<double>(&ein)->default_value(80), "dielectric const inside")
-      ("epsilon_out,E", value<double>(&eout)->default_value(80), "dielectric const outside")
+      ("radius,a", value<double>(&radius)->default_value(2.6775), "sphere radius")				// enter in nanometers
+      ("epsilon_in,e", value<double>(&ein)->default_value(78.5), "dielectric const inside")
+      ("epsilon_out,E", value<double>(&eout)->default_value(78.5), "dielectric const outside")
       ("counterion_valency,v", value<int>(&counterion_valency)->default_value(1), "counterion valency")
-      ("colloid_valency,V", value<int>(&colloid_valency)->default_value(-60), "colloid valency")
+      ("nanoparticle_charge,V", value<double>(&nanoparticle.bare_charge)->default_value(-60), "nanoparticle charge")
       ("salt_valency_in,z", value<int>(&salt_valency_in)->default_value(1), "salt valency inside")
       ("salt_valency_out,Z", value<int>(&salt_valency_out)->default_value(1), "salt valency outside")
       ("salt_conc_in,c", value<double>(&salt_conc_in)->default_value(0.0), "salt concentration inside")
@@ -123,21 +130,21 @@ int main(int argc, char* argv[])
   
   // Set up the system
   T = 1;															// set temperature
-  dsphere = INTERFACE(VECTOR3D(0,0,0), radius/unitlength, ein, eout);								// make interface
-  dsphere.set_up(salt_conc_in, salt_conc_out, salt_valency_in, salt_valency_out, total_gridpoints, box_radius/unitlength);	// set up properties inside and outside the interface
-  colloid = PARTICLE(0, 2*radius/unitlength, colloid_valency, 1.0*colloid_valency, 1.0, dsphere.ein, VECTOR3D(0,0,0));		// make the nano object. note the diameter is supplied, not the radius
-  colloid.velvec = VECTOR3D(0,0,0);												// nano object is stationary
-  dsphere.put_counterions(colloid, counterion, counterion_valency, counterion_diameter, ion);					// put counterions	Note: ion contains all ions
-  dsphere.put_saltions_inside(saltion_in, salt_valency_in, salt_conc_in, saltion_diameter_in, ion);				// put salt ions inside
-  dsphere.put_saltions_outside(saltion_out, salt_valency_out, salt_conc_out, saltion_diameter_out, ion); 			// put salt ions outside
-  dsphere.discretize(s);								// discretize interface								
+  nanoparticle = INTERFACE(VECTOR3D(0,0,0), radius/unitlength, ein, eout);								// make interface
+  nanoparticle.set_up(salt_conc_in, salt_conc_out, salt_valency_in, salt_valency_out, total_gridpoints, box_radius/unitlength);	// set up properties inside and outside the interface
+  nanoparticle.put_counterions(counterion, counterion_valency, counterion_diameter, ion);					// put counterions	Note: ion contains all ions
+  nanoparticle.put_saltions_inside(saltion_in, salt_valency_in, salt_conc_in, saltion_diameter_in, ion);				// put salt ions inside
+  nanoparticle.put_saltions_outside(saltion_out, salt_valency_out, salt_conc_out, saltion_diameter_out, ion); 			// put salt ions outside
+  nanoparticle.discretize(s);								// discretize interface								
   // if dielectric environment inside and outside NP are different, NPs get polarized
-  if (dsphere.ein == dsphere.eout)
-    dsphere.POLARIZED = false;
+  if (nanoparticle.ein == nanoparticle.eout)
+    nanoparticle.POLARIZED = false;
   else
-    dsphere.POLARIZED = true;
+    nanoparticle.POLARIZED = true;
   
-  cout << "np is polarized " << dsphere.POLARIZED << endl;
+  cout << "np is polarized " << nanoparticle.POLARIZED << endl;
+  
+  nanoparticle.RANDOMIZE_ION_FEATURES = false;
   
   // NOTE: sizing the arrays employed in precalculate functions
   for (unsigned int k = 0; k < s.size(); k++)
@@ -151,28 +158,23 @@ int main(int argc, char* argv[])
   }
   
   // could only do precalculate if CPMD
-  precalculate(s, dsphere);								// precalculate 
+  precalculate(s, nanoparticle);								// precalculate 
   
   for (unsigned int k = 0; k < s.size(); k++)						// get polar coordinates for the vertices
     s[k].get_polar();
-  make_bins(bin, dsphere, bin_width);							// set up bins to be used for computing density profiles
+  make_bins(bin, nanoparticle, bin_width);							// set up bins to be used for computing density profiles
   vector<double> initial_density;
-  bin_ions(ion, dsphere, initial_density, bin);						// bin the ions to get initial density profile
+  bin_ions(ion, nanoparticle, initial_density, bin);						// bin the ions to get initial density profile
   
   // output to screen the parameters of the problem
   cout << "\n";
-  if (colloid.q == 0 ) 
-    cout << "Interface problem " << endl;
-  if (colloid.q != 0) 
-    cout << "Colloid problem " << endl;
-  cout << "Short run " << short_run << endl;
   cout << "Reduced units: scalefactor entering in Coloumb interaction is " << scalefactor << endl;
-  cout << "Other units : length (cms)" << setw(5) << unitlength*pow(10.0,-7) << setw(10) << "energy(ergs)" << setw(5) << unitenergy << setw(10) << "mass(g)" << setw(5) << unitmass << setw(10) << "time(s)" << setw(5) << unittime << endl;
-  cout << "Radius of the dielectric sphere (interface) " << dsphere.radius << endl;
-  cout << "Colloid charge " << colloid.q << endl;
-  cout << "Permittivity inside " << dsphere.ein << endl;
-  cout << "Permittivity outside " << dsphere.eout << endl;
-  cout << "Contrast strength " << 2*(dsphere.eout - dsphere.ein)/(dsphere.eout+dsphere.ein) << endl;
+  cout << "Other units : length (cms) " << unitlength*pow(10.0,-7) << " | " << "energy(ergs) " << unitenergy << " | " << "mass(g) " << unitmass << " | " << "time(s) " << unittime << endl;
+  cout << "Radius of the dielectric sphere (interface) " << nanoparticle.radius << endl;
+  cout << "Nanoparticle charge " << nanoparticle.bare_charge << endl;
+  cout << "Permittivity inside " << nanoparticle.ein << endl;
+  cout << "Permittivity outside " << nanoparticle.eout << endl;
+  cout << "Contrast strength " << 2*(nanoparticle.eout - nanoparticle.ein)/(nanoparticle.eout+nanoparticle.ein) << endl;
   cout << "Counterion valency " << counterion_valency << endl;
   cout << "Salt ion valency inside " << salt_valency_in << endl;
   cout << "Salt ion valency outside " << salt_valency_out << endl;
@@ -181,11 +183,11 @@ int main(int argc, char* argv[])
   cout << "Salt ion diameter outside " << saltion_diameter_out/unitlength << endl;
   cout << "Salt concentration inside " << salt_conc_in << endl;
   cout << "Salt concentration outside " << salt_conc_out << endl;
-  cout << "Debye length inside " << dsphere.inv_kappa_in << endl;
-  cout << "Debye length outside " << dsphere.inv_kappa_out << endl;
-  cout << "Mean separation inside " << dsphere.mean_sep_in << endl;
-  cout << "Mean separation outside " << dsphere.mean_sep_out << endl;
-  cout << "Box radius " << dsphere.box_radius << endl;
+  cout << "Debye length inside " << nanoparticle.inv_kappa_in << endl;
+  cout << "Debye length outside " << nanoparticle.inv_kappa_out << endl;
+  cout << "Mean separation inside " << nanoparticle.mean_sep_in << endl;
+  cout << "Mean separation outside " << nanoparticle.mean_sep_out << endl;
+  cout << "Box radius " << nanoparticle.box_radius << endl;
   cout << "Number of counterions " << counterion.size() << endl;
   cout << "Number of salt ions inside " << saltion_in.size() << endl;
   cout << "Number of salt ions outside " << saltion_out.size() << endl;
@@ -206,7 +208,7 @@ int main(int argc, char* argv[])
   density_profile.close();
   
   // some calculations before simulation begins
-  cout << "Total charge inside the sphere " << dsphere.total_charge_inside(ion) << endl;
+  cout << "Total charge inside the sphere " << nanoparticle.total_charge_inside(ion) << endl;
   
   // NEW NOTE : resizing the member arrays Gion and gradGion to store dynamic precalculations in fmd and cpmd force routines
   for (unsigned int k = 0; k < s.size(); k++)
@@ -216,7 +218,7 @@ int main(int argc, char* argv[])
   }
   
   // Fictitious molecular dynamics
-  fmd(s, ion, dsphere, colloid, fmdremote, cpmdremote);
+  fmd(s, ion, nanoparticle, fmdremote, cpmdremote);
   
   // result of fmd
   ofstream induced_density ("outfiles/induced_density.dat");
@@ -252,11 +254,11 @@ int main(int argc, char* argv[])
   cout << "Number of chains for fake system" << setw(3) << fake_bath.size() - 1 << endl;
   
   // Car-Parrinello Molecular Dynamics
-  cpmd(ion, s, dsphere, real_bath, fake_bath, bin, colloid, fmdremote, cpmdremote);
+  cpmd(ion, s, nanoparticle, real_bath, fake_bath, bin, fmdremote, cpmdremote);
   
   // Post simulation analysis (useful for short runs, but performed otherwise too)
   cout << "MD trust factor R (should be < 0.05) is " << compute_MD_trust_factor_R(cpmdremote.hiteqm) << endl;
-  auto_correlation_function();
+  //auto_correlation_function();
   
   cout << "Program ends" << endl;
   cout << endl;

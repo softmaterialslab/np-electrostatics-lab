@@ -1,9 +1,9 @@
 // This is fictitious molecular dynamics
 // This program is used to estimate the correct w(k)'s on the interface
 
-#include "fmd.h"
+#include "functions.h"
 
-void fmd(vector<VERTEX>& s, vector<PARTICLE>& ion, INTERFACE& dsphere, PARTICLE& colloid, CONTROL& fmdremote, CONTROL& cpmdremote) 
+void fmd(vector<VERTEX>& s, vector<PARTICLE>& ion, INTERFACE& nanoparticle, CONTROL& fmdremote, CONTROL& cpmdremote) 
 {
   // Part I : Initialize
   for (unsigned int k = 0; k < s.size(); k++) 	
@@ -12,23 +12,23 @@ void fmd(vector<VERTEX>& s, vector<PARTICLE>& ion, INTERFACE& dsphere, PARTICLE&
     s[k].w = 0.0;								// Initialize fake degree value		(unconstrained)
     s[k].vw = 0.0;								// Initialize fake degree velocity	(unconstrained)
   } 
-  long double sigma = constraint(s, ion, dsphere);
+  long double sigma = constraint(s, ion, nanoparticle);
   for (unsigned int k = 0; k < s.size(); k++)
     s[k].w = s[k].w - sigma / (s[k].a * s.size());				// Satisfy constraint 
   long double sigmadot = dotconstraint(s);  
   for (unsigned int k = 0; k < s.size(); k++)
     s[k].vw = s[k].vw - sigmadot / (s[k].a * s.size());				// Satisfy time derivative of the constraint
-  for_fmd_calculate_force(s, ion, dsphere, colloid);				// Compute initial force
+  for_fmd_calculate_force(s, ion, nanoparticle);				// Compute initial force
   long double kinetic_energy = fake_kinetic_energy(s);				// Compute initial kinetic energy
-  double potential_energy = energy_functional(s, ion, dsphere, colloid);	// Compute initial potential energy
+  double potential_energy = energy_functional(s, ion, nanoparticle);	// Compute initial potential energy
   fmdremote.annealfreq = 1000;
   
   // Output fmd essentials
   cout << "\n";
   cout << "F M D" << " at " << fmdremote.verify << endl;
   cout << "Mass assigned to the fake degrees " << s[0].mu << endl;
-  cout << "Total induced charge on the interface " << dsphere.total_induced_charge(s) << endl;
-  cout << "Constraint is (zero if satisfied) " << constraint(s, ion, dsphere) << endl;
+  cout << "Total induced charge on the interface " << nanoparticle.total_induced_charge(s) << endl;
+  cout << "Constraint is (zero if satisfied) " << constraint(s, ion, nanoparticle) << endl;
   cout << "Time derivative of the constraint is " << dotconstraint(s) << endl;
   cout << "Initial force on fake degree at vertex 0 " << s[0].fw << endl;
   cout << "Initial fake kinetic energy " << kinetic_energy << endl;
@@ -58,10 +58,10 @@ void fmd(vector<VERTEX>& s, vector<PARTICLE>& ion, INTERFACE& dsphere, PARTICLE&
   /*.......................................Fictitious molecular dynamics.......................................*/ 
   for (int num = 1; num <= fmdremote.steps; num++) 
   {
-    fmdv << num << "  " << s[0].w << "  " << s[0].vw << "  " << s[0].fw << "  " << dsphere.total_induced_charge(s) << endl;
+    //fmdv << num << "  " << s[0].w << "  " << s[0].vw << "  " << s[0].fw << "  " << nanoparticle.total_induced_charge(s) << endl;
     
     // total induced charge
-    fmdtic << num << "  " << dsphere.total_induced_charge(s) << endl;
+    fmdtic << num << "  " << nanoparticle.total_induced_charge(s) << endl;
     
     // INTEGRATOR
     //! begins
@@ -69,8 +69,8 @@ void fmd(vector<VERTEX>& s, vector<PARTICLE>& ion, INTERFACE& dsphere, PARTICLE&
       s[k].update_velocity(fmdremote.timestep);		// update velocity half time step
     for (unsigned int k = 0; k < s.size(); k++)
       s[k].update_position(fmdremote.timestep);		// update position full time step 
-    SHAKE(s, ion, dsphere, fmdremote);			// shake to ensure constraint  
-    for_fmd_calculate_force(s, ion, dsphere, colloid);	// calculate forces using the new positions
+    SHAKE(s, ion, nanoparticle, fmdremote);			// shake to ensure constraint  
+    for_fmd_calculate_force(s, ion, nanoparticle);	// calculate forces using the new positions
     for (unsigned int k = 0; k < s.size(); k++)
       s[k].update_velocity(fmdremote.timestep);		// update velocity full time step
     RATTLE(s);						// rattle to ensure time derivative of the constraint
@@ -89,7 +89,7 @@ void fmd(vector<VERTEX>& s, vector<PARTICLE>& ion, INTERFACE& dsphere, PARTICLE&
       samples = samples + 1;
       for (unsigned int k = 0; k < s.size(); k++)
 	s[k].wmean += s[k].w;
-      average_total_induced_charge += dsphere.total_induced_charge(s);
+      average_total_induced_charge += nanoparticle.total_induced_charge(s);
     }
     
     
@@ -97,7 +97,7 @@ void fmd(vector<VERTEX>& s, vector<PARTICLE>& ion, INTERFACE& dsphere, PARTICLE&
     if (num % fmdremote.extra_compute == 0)
     {
       long double kinetic_energy = fake_kinetic_energy(s);
-      double potential_energy = energy_functional(s, ion, dsphere, colloid);
+      double potential_energy = energy_functional(s, ion, nanoparticle);
       double extended_energy = kinetic_energy + potential_energy;
       fmde << num << "  " << extended_energy << "  " << kinetic_energy << "  " <<  potential_energy << endl;
     }
@@ -113,4 +113,3 @@ void fmd(vector<VERTEX>& s, vector<PARTICLE>& ion, INTERFACE& dsphere, PARTICLE&
   cout << "Total induced charge on average " << average_total_induced_charge << endl;      
   return;
 }
-

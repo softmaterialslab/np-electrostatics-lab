@@ -1,15 +1,8 @@
 // This is Car-Parrinello molecular dynamics (CPMD)
 
-#include "particle.h"
-#include "vertex.h"
-#include "interface.h"
-#include "thermostat.h"
-#include "control.h"
-#include "forces.h"
-#include "energies.h"
 #include "functions.h"
 
-void cpmd(vector<PARTICLE>& ion, vector<VERTEX>& s, INTERFACE& dsphere, vector<THERMOSTAT>& real_bath, vector<THERMOSTAT>& fake_bath, vector<BIN>& bin, PARTICLE& colloid, CONTROL& fmdremote, CONTROL& cpmdremote)
+void cpmd(vector<PARTICLE>& ion, vector<VERTEX>& s, INTERFACE& nanoparticle, vector<THERMOSTAT>& real_bath, vector<THERMOSTAT>& fake_bath, vector<BIN>& bin, CONTROL& fmdremote, CONTROL& cpmdremote)
 {
   // Part I : Initialize and set up
   for (unsigned int k = 0; k < s.size(); k++) 
@@ -17,26 +10,26 @@ void cpmd(vector<PARTICLE>& ion, vector<VERTEX>& s, INTERFACE& dsphere, vector<T
     s[k].mu = cpmdremote.fakemass * s[k].a * s[k].a;				// fake degree masses assigned
     s[k].w = s[k].wmean;					// fake degree positions initialized
   }
-  initialize_fake_velocities(s, fake_bath);		
-  long double sigma = constraint(s, ion, dsphere);			// constraint evaluated
+  initialize_fake_velocities(s, fake_bath, nanoparticle);		
+  long double sigma = constraint(s, ion, nanoparticle);			// constraint evaluated
   for (unsigned int k = 0; k < s.size(); k++)
     s[k].w = s[k].w - sigma / (s[k].a * s.size());		// constraint satisfied
   long double sigmadot = dotconstraint(s);  				// time derivative of the constraint evaluated
   for (unsigned int k = 0; k < s.size(); k++)
     s[k].vw = s[k].vw - sigmadot / (s[k].a * s.size());		// time derivative of constraint satisfied
   ;							  	// particle positions initialized already, before fmd
-  initialize_particle_velocities(ion, real_bath);		// particle velocities initialized
-  for_cpmd_calculate_force(s, ion, dsphere, colloid);		// forces on particles and fake degrees initialized
+  initialize_particle_velocities(ion, real_bath, nanoparticle);		// particle velocities initialized
+  for_cpmd_calculate_force(s, ion, nanoparticle);		// forces on particles and fake degrees initialized
   long double particle_ke = particle_kinetic_energy(ion);		// compute initial particle kinetic energy
   long double fake_ke = fake_kinetic_energy(s);			// compute initial fake kinetic energy
-  double potential_energy = energy_functional(s, ion, dsphere, colloid);	// Compute initial potential energy
+  double potential_energy = energy_functional(s, ion, nanoparticle);	// Compute initial potential energy
   
   // Output cpmd essentials
   cout << "\n";
   cout << "C P M D" << " on " << endl;
   cout << "Mass assigned to the fake degrees " << s[0].mu << endl;
-  cout << "Total induced charge on the interface " << dsphere.total_induced_charge(s) << endl;
-  cout << "Constraint is (zero if satisfied) " << constraint(s, ion, dsphere) << endl;
+  cout << "Total induced charge on the interface " << nanoparticle.total_induced_charge(s) << endl;
+  cout << "Constraint is (zero if satisfied) " << constraint(s, ion, nanoparticle) << endl;
   cout << "Time derivative of the constraint is " << dotconstraint(s) << endl;
   cout << "Initial force on fake degree at vertex 0 " << s[0].fw << endl;
   cout << "Initial fake kinetic energy " << fake_ke << endl; 
@@ -50,7 +43,7 @@ void cpmd(vector<PARTICLE>& ion, vector<VERTEX>& s, INTERFACE& dsphere, vector<T
   cout << "Main fake thermostat temperature " << fake_bath[0].T << endl;
   cout << "Main fake thermostat mass " << fake_bath[0].Q << endl;
   cout << "Number of bins used for computing density profiles " << bin.size() << endl;
-  cout << "Tme step " << cpmdremote.timestep << endl;
+  cout << "Time step " << cpmdremote.timestep << endl;
   cout << "Number of steps " << cpmdremote.steps << endl;
   cout << "Write basic files every " << cpmdremote.writedata << " steps" << endl;
   cout << "Production begins at " << cpmdremote.hiteqm << endl;
@@ -104,14 +97,14 @@ void cpmd(vector<PARTICLE>& ion, vector<VERTEX>& s, INTERFACE& dsphere, vector<T
       ion[i].update_position(cpmdremote.timestep);					// update particle position full time step
     for (unsigned int k = 0; k < s.size(); k++)						// update fake position full time step
       s[k].update_position(cpmdremote.timestep);
-    if (dsphere.POLARIZED)
-      SHAKE(s, ion, dsphere, cpmdremote);							// shake to ensure constraint is satisfied
-    for_cpmd_calculate_force(s, ion, dsphere, colloid);					// calculate forces on ion and fake degree
+    if (nanoparticle.POLARIZED)
+      SHAKE(s, ion, nanoparticle, cpmdremote);							// shake to ensure constraint is satisfied
+    for_cpmd_calculate_force(s, ion, nanoparticle);					// calculate forces on ion and fake degree
     for (unsigned int k = 0; k < s.size(); k++)
       s[k].new_update_velocity(cpmdremote.timestep, fake_bath[0], expfac_fake);		// update fake velocity half time step  
     for (unsigned int i = 0; i < ion.size(); i++)
       ion[i].new_update_velocity(cpmdremote.timestep, real_bath[0], expfac_real);	// update particle velocity half time step
-    if (dsphere.POLARIZED)
+    if (nanoparticle.POLARIZED)
       RATTLE(s);										// rattle to ensure time derivative of the constraint is satisfied
     // kinetic energies needed to set canonical ensemble
     fake_ke = fake_kinetic_energy(s);
@@ -131,27 +124,27 @@ void cpmd(vector<PARTICLE>& ion, vector<VERTEX>& s, INTERFACE& dsphere, vector<T
     if (num % cpmdremote.extra_compute == 0) 
     {
       energy_samples++;
-      compute_n_write_useful_data(num, ion, s, real_bath, fake_bath, dsphere, colloid);
+      compute_n_write_useful_data(num, ion, s, real_bath, fake_bath, nanoparticle);
       // write basic files
-      write_basic_files(cpmdremote.writedata, num, ion, s, real_bath, fake_bath, dsphere);
+      write_basic_files(cpmdremote.writedata, num, ion, s, real_bath, fake_bath, nanoparticle);
     }
     // verify with F M D
-    if (dsphere.POLARIZED && num % cpmdremote.verify == 0)
+    if (nanoparticle.POLARIZED && num % cpmdremote.verify == 0)
     {
-      double functional_deviation = verify_with_FMD(num, s, ion, dsphere, colloid, fmdremote, cpmdremote);
+      double functional_deviation = verify_with_FMD(num, s, ion, nanoparticle, fmdremote, cpmdremote);
       verification_samples++;
       average_functional_deviation += functional_deviation;
     }
     
     // make a movie
     if (num >= moviestart && num % moviefreq == 0) 
-      make_movie(num, ion, dsphere); 
+      make_movie(num, ion, nanoparticle); 
     
     // compute density profile
     if (num >= cpmdremote.hiteqm && (num % cpmdremote.freq == 0))
     {
       density_profile_samples++;
-      compute_density_profile(num, density_profile_samples, mean_density, mean_sq_density, ion, dsphere, bin, cpmdremote);
+      compute_density_profile(num, density_profile_samples, mean_density, mean_sq_density, ion, nanoparticle, bin, cpmdremote);
     }
     //percentage calculation
     percentage=roundf(num/(double)cpmdremote.steps*100 * 10) / 10;
@@ -187,9 +180,9 @@ void cpmd(vector<PARTICLE>& ion, vector<VERTEX>& s, INTERFACE& dsphere, vector<T
     final_configuration << ion[i].posvec << endl;
   cout << "Number of samples used to compute energy" << setw(10) << energy_samples << endl;
   cout << "Number of samples used to get density profile" << setw(10) << density_profile_samples << endl;
-  if (dsphere.POLARIZED)
+  if (nanoparticle.POLARIZED)
     cout << "Number of samples used to verify on the fly results" << setw(10) << verification_samples << endl;
-  if (dsphere.POLARIZED)
+  if (nanoparticle.POLARIZED)
     cout << "Average deviation of the functional from the BO surface" << setw(15) << average_functional_deviation / verification_samples << endl;
   return ;
 }

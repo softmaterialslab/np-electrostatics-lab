@@ -48,16 +48,16 @@ void INTERFACE::set_up(double salt_conc_in, double salt_conc_out, double salt_va
   return;
 }
   
-void INTERFACE::put_counterions(PARTICLE& colloid, vector<PARTICLE>& counterion, int valency, double diameter, vector<PARTICLE>& ion)
+void INTERFACE::put_counterions(vector<PARTICLE>& counterion, int ion_valency, double ion_diameter, vector<PARTICLE>& ion)
 {
   // establish the number of counterions first
-  unsigned int total_counterions = int(abs(colloid.valency/valency));
+  unsigned int total_counterions = int(abs(bare_charge/ion_valency));
   // express diameter in consistent units
-  diameter = diameter / unitlength;
-  // distance of closest approach between counterion and the interface (colloid)
-  double r0 = 0.5 * colloid.diameter + 0.5 * diameter;					// this would the same as radius + 0.5 * diameter
-  // distance of closest approach between counterion and the box
-  double r0_box = box_radius - 0.5 * diameter;
+  ion_diameter = ion_diameter / unitlength;
+  // distance of closest approach between counterion and the nanoparticle
+  double r0 = radius + 0.5 * ion_diameter;
+  // distance of closest approach between counterion and the simulation box boundary (treated as a sphere)
+  double r0_box = box_radius - 0.5 * ion_diameter;
   
   UTILITY ugsl;
   
@@ -71,17 +71,17 @@ void INTERFACE::put_counterions(PARTICLE& colloid, vector<PARTICLE>& counterion,
     double z = gsl_rng_uniform(ugsl.r);
     z = (1 - z) * (-r0_box) + z * (r0_box);
     VECTOR3D posvec = VECTOR3D(x,y,z);
-    if (posvec.GetMagnitude() < r0 + diameter)						// giving an extra ion diameter length to be safe with the initial generation 
+    if (posvec.GetMagnitude() < r0 + ion_diameter)						// giving an extra ion diameter length to be safe with the initial generation 
       continue;
-    if (posvec.GetMagnitude() >= box_radius - diameter)
+    if (posvec.GetMagnitude() >= box_radius - ion_diameter)
       continue;
     bool continuewhile = false;
     for (unsigned int i = 0; i < ion.size() && continuewhile == false; i++)
-      if ((posvec - ion[i].posvec).GetMagnitude() <= diameter) continuewhile = true;		// avoid overlap of initial ion positions
+      if ((posvec - ion[i].posvec).GetMagnitude() <= ion_diameter) continuewhile = true;		// avoid overlap of initial ion positions
     if (continuewhile == true)
       continue;
-    counterion.push_back(PARTICLE(int(ion.size())+1,diameter,valency,valency*1.0,1.0,eout,posvec));		// create a counterion
-    ion.push_back(PARTICLE(int(ion.size())+1,diameter,valency,valency*1.0,1.0,eout,posvec));			// copy the counterion as a general ion
+    counterion.push_back(PARTICLE(int(ion.size())+1,ion_diameter,ion_valency,ion_valency*1.0,1.0,eout,posvec));		// create a counterion
+    ion.push_back(PARTICLE(int(ion.size())+1,ion_diameter,ion_valency,ion_valency*1.0,1.0,eout,posvec));			// copy the counterion as a general ion
   }
   ofstream listcounterions("outfiles/counterions.xyz", ios::out);
   listcounterions << counterion.size() << endl;
@@ -190,7 +190,7 @@ void INTERFACE::put_saltions_outside(vector<PARTICLE>& saltion_out, int valency,
 void INTERFACE::discretize(vector<VERTEX>& s)
 {
   char filename[200];
-  sprintf(filename, "infiles_a10/grid%d.dat", number_of_vertices);
+  sprintf(filename, "infiles_a7.5/grid%d.dat", number_of_vertices); // change infiles folder if nanoparticle radius changes; for a = 2.67m nm = 7.5 sigma in reduced units, infiles_a7.5 is the folder
   ifstream in(filename, ios::in);
   if (!in) 
   {

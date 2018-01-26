@@ -1,7 +1,6 @@
 // This file contains the routines 
 
 #include "functions.h"
-#include "fmd.h"
 
 // overload out
 ostream& operator<<(ostream& os, VECTOR3D vec)
@@ -11,9 +10,9 @@ ostream& operator<<(ostream& os, VECTOR3D vec)
 }
 
 // make bins
-void make_bins(vector<BIN>& bin, INTERFACE& dsphere, double bin_width)
+void make_bins(vector<BIN>& bin, INTERFACE& nanoparticle, double bin_width)
 {
-  unsigned int number_of_bins = int(dsphere.box_radius / bin_width);	
+  unsigned int number_of_bins = int(nanoparticle.box_radius / bin_width);	
   bin.resize(number_of_bins);
   for (unsigned int bin_num = 0; bin_num < bin.size(); bin_num++)
     bin[bin_num].set_up(bin_num, bin_width);
@@ -25,7 +24,7 @@ void make_bins(vector<BIN>& bin, INTERFACE& dsphere, double bin_width)
 }
 
 // bin ions to get density profile
-void bin_ions(vector<PARTICLE>& ion, INTERFACE& dsphere, vector<double>& density, vector<BIN>& bin)
+void bin_ions(vector<PARTICLE>& ion, INTERFACE& nanoparticle, vector<double>& density, vector<BIN>& bin)
 {
   double r;
   int bin_number;
@@ -43,7 +42,7 @@ void bin_ions(vector<PARTICLE>& ion, INTERFACE& dsphere, vector<double>& density
 }
 
 // initialize velocities of particles to start simulation
-void initialize_particle_velocities(vector<PARTICLE>& ion, vector<THERMOSTAT>& bath)
+void initialize_particle_velocities(vector<PARTICLE>& ion, vector<THERMOSTAT>& bath, INTERFACE& nanoparticle)
 {
   if (bath.size() == 1)
   {
@@ -52,10 +51,20 @@ void initialize_particle_velocities(vector<PARTICLE>& ion, vector<THERMOSTAT>& b
     cout << "No thermostat for real system" << endl;
     return;
   }
-  double p_sigma = sqrt(kB * bath[0].T / (2.0 * ion[0].m));		// Maxwell distribution width
-  UTILITY ugsl;
-  for (unsigned int i = 0; i < ion.size(); i++) 
-    ion[i].velvec = VECTOR3D(gsl_ran_gaussian(ugsl.r,p_sigma), gsl_ran_gaussian(ugsl.r,p_sigma), gsl_ran_gaussian(ugsl.r,p_sigma));	// initialized velocities
+  
+  if (nanoparticle.RANDOMIZE_ION_FEATURES)
+  {
+    double p_sigma = sqrt(kB * bath[0].T / (2.0 * ion[0].m));		// Maxwell distribution width
+    UTILITY ugsl;
+    for (unsigned int i = 0; i < ion.size(); i++) 
+      ion[i].velvec = VECTOR3D(gsl_ran_gaussian(ugsl.r,p_sigma), gsl_ran_gaussian(ugsl.r,p_sigma), gsl_ran_gaussian(ugsl.r,p_sigma));	// initialized velocities
+  }
+  else
+  {
+    for (unsigned int i = 0; i < ion.size(); i++) 
+      ion[i].velvec = VECTOR3D(0,0,0);	
+  }
+  
   VECTOR3D average_velocity_vector = VECTOR3D(0,0,0);
   for (unsigned int i = 0; i < ion.size(); i++) 
     average_velocity_vector = average_velocity_vector + ion[i].velvec;
@@ -66,21 +75,31 @@ void initialize_particle_velocities(vector<PARTICLE>& ion, vector<THERMOSTAT>& b
 }
 
 // initialize velocities of fake degrees to start simulation
-void initialize_fake_velocities(vector<VERTEX>& s, vector<THERMOSTAT>& fake_bath)
+void initialize_fake_velocities(vector<VERTEX>& s, vector<THERMOSTAT>& fake_bath, INTERFACE& nanoparticle)
 {
-  if (fake_bath.size() == 1)							// only the dummy is there
+  if (fake_bath.size() == 1)	// only the dummy is there
   {
     for (unsigned int k = 0; k < s.size(); k++)
       s[k].vw = 0.0;
     cout << "No thermostat for fake system" << endl;
     return;
   }
-  UTILITY ugsl;
-  for (unsigned int k = 0; k < s.size(); k++) 
+  
+  if (nanoparticle.RANDOMIZE_ION_FEATURES)
   {
     double w_sigma = sqrt(kB * fake_bath[0].T / (2.0 * s[0].mu));		// Maxwell distribution width
-    s[k].vw = gsl_ran_gaussian(ugsl.r,w_sigma);							// initialized velocities
+    UTILITY ugsl;
+    for (unsigned int k = 0; k < s.size(); k++) 
+    {
+      s[k].vw = gsl_ran_gaussian(ugsl.r,w_sigma);	// initialized velocities
+    }
   }
+  else
+  {
+    for (unsigned int k = 0; k < s.size(); k++) 
+      s[k].vw = 0.0;	
+  }
+  
   double average_fake_momentum = 0.0;
   for (unsigned int k = 0; k < s.size(); k++) 
     average_fake_momentum = average_fake_momentum + s[k].mu * s[k].vw;
@@ -91,16 +110,16 @@ void initialize_fake_velocities(vector<VERTEX>& s, vector<THERMOSTAT>& fake_bath
 }
 
 // compute additional quantities
-void compute_n_write_useful_data(int cpmdstep, vector<PARTICLE>& ion, vector<VERTEX>& s, vector<THERMOSTAT>& real_bath, vector<THERMOSTAT>& fake_bath, INTERFACE& dsphere, PARTICLE& colloid)
+void compute_n_write_useful_data(int cpmdstep, vector<PARTICLE>& ion, vector<VERTEX>& s, vector<THERMOSTAT>& real_bath, vector<THERMOSTAT>& fake_bath, INTERFACE& nanoparticle)
 {
   ofstream list_tic ("outfiles/total_induced_charge.dat", ios::app);
   ofstream list_temperature ("outfiles/temperature.dat", ios::app);
   ofstream list_energy ("outfiles/energy.dat", ios::app);
   list_temperature << cpmdstep << setw(15) << 2*particle_kinetic_energy(ion)/(real_bath[0].dof*kB) << setw(15) << real_bath[0].T << setw(15) << 2*fake_kinetic_energy(s)/(fake_bath[0].dof*kB) << setw(15) << fake_bath[0].T << endl;
-  list_tic << cpmdstep << setw(15) << dsphere.total_induced_charge(s) << endl;
+  list_tic << cpmdstep << setw(15) << nanoparticle.total_induced_charge(s) << endl;
   double fake_ke = fake_kinetic_energy(s);
   double particle_ke = particle_kinetic_energy(ion);
-  double potential_energy = energy_functional(s, ion, dsphere, colloid);
+  double potential_energy = energy_functional(s, ion, nanoparticle);
   double real_bath_ke = bath_kinetic_energy(real_bath);
   double real_bath_pe = bath_potential_energy(real_bath);
   double fake_bath_ke = bath_kinetic_energy(fake_bath);
@@ -110,16 +129,16 @@ void compute_n_write_useful_data(int cpmdstep, vector<PARTICLE>& ion, vector<VER
 }
 
 // verify on the fly properties with exact
-double verify_with_FMD(int cpmdstep, vector<VERTEX> s, vector<PARTICLE>& ion, INTERFACE& dsphere, PARTICLE& colloid, CONTROL& fmdremote, CONTROL& cpmdremote)
+double verify_with_FMD(int cpmdstep, vector<VERTEX> s, vector<PARTICLE>& ion, INTERFACE& nanoparticle, CONTROL& fmdremote, CONTROL& cpmdremote)
 {
   vector<VERTEX> exact_s;
   exact_s = s;
   fmdremote.verify = cpmdstep;
-  fmd(exact_s, ion, dsphere, colloid, fmdremote, cpmdremote);
+  fmd(exact_s, ion, nanoparticle, fmdremote, cpmdremote);
   for (unsigned int k = 0; k < s.size(); k++)
     exact_s[k].w = exact_s[k].wmean;
-  double exact_functional = energy_functional(exact_s, ion, dsphere, colloid);
-  double on_the_fly_functional = energy_functional(s, ion, dsphere, colloid);
+  double exact_functional = energy_functional(exact_s, ion, nanoparticle);
+  double on_the_fly_functional = energy_functional(s, ion, nanoparticle);
   double functional_deviation = 0;
   for (unsigned int k = 0; k < s.size(); k++)
     functional_deviation = functional_deviation + 100 * (on_the_fly_functional - exact_functional) / exact_functional;
@@ -149,7 +168,7 @@ double verify_with_FMD(int cpmdstep, vector<VERTEX> s, vector<PARTICLE>& ion, IN
 }
 
 // make movie
-void make_movie(int num, vector<PARTICLE>& ion, INTERFACE& dsphere)
+void make_movie(int num, vector<PARTICLE>& ion, INTERFACE& nanoparticle)
 {
   ofstream outdump("outfiles/p.lammpstrj", ios::app);
   outdump << "ITEM: TIMESTEP" << endl;
@@ -157,9 +176,9 @@ void make_movie(int num, vector<PARTICLE>& ion, INTERFACE& dsphere)
   outdump << "ITEM: NUMBER OF ATOMS" << endl;
   outdump << ion.size() << endl;
   outdump << "ITEM: BOX BOUNDS" << endl;
-  outdump << -dsphere.box_radius << "\t" << dsphere.box_radius << endl;
-  outdump << -dsphere.box_radius << "\t" << dsphere.box_radius << endl;
-  outdump << -dsphere.box_radius << "\t" << dsphere.box_radius << endl;
+  outdump << -nanoparticle.box_radius << "\t" << nanoparticle.box_radius << endl;
+  outdump << -nanoparticle.box_radius << "\t" << nanoparticle.box_radius << endl;
+  outdump << -nanoparticle.box_radius << "\t" << nanoparticle.box_radius << endl;
   outdump << "ITEM: ATOMS index type x y z" << endl;
   string type;
   for (unsigned int i = 0; i < ion.size(); i++)
@@ -175,22 +194,22 @@ void make_movie(int num, vector<PARTICLE>& ion, INTERFACE& dsphere)
 }
 
 // compute density profile
-void compute_density_profile(int cpmdstep, double density_profile_samples, vector<double>& mean_density, vector<double>& mean_sq_density, vector<PARTICLE>& ion, INTERFACE& dsphere, vector<BIN>& bin, CONTROL& cpmdremote)
+void compute_density_profile(int cpmdstep, double density_profile_samples, vector<double>& mean_density, vector<double>& mean_sq_density, vector<PARTICLE>& ion, INTERFACE& nanoparticle, vector<BIN>& bin, CONTROL& cpmdremote)
 {
   vector<double> sample_density;
   ofstream file_for_auto_corr ("outfiles/for_auto_corr.dat", ios::app);
       
-  bin_ions(ion, dsphere, sample_density, bin);
+  bin_ions(ion, nanoparticle, sample_density, bin);
   for (unsigned int b = 0; b < mean_density.size(); b++)
     mean_density.at(b) = mean_density.at(b) + sample_density.at(b);
   for (unsigned int b = 0; b < sample_density.size(); b++)
     mean_sq_density.at(b) = mean_sq_density.at(b) + sample_density.at(b)*sample_density.at(b);
   
   // write a file for post analysis to get auto correlation time		// NOTE this is assuming ions do not cross the interface
-  if (ion[0].posvec.GetMagnitude() > dsphere.radius)
-    file_for_auto_corr << cpmdstep - cpmdremote.hiteqm << "\t" << sample_density[int((dsphere.radius+2)/bin[0].width)] << endl;
+  if (ion[0].posvec.GetMagnitude() > nanoparticle.radius)
+    file_for_auto_corr << cpmdstep - cpmdremote.hiteqm << "\t" << sample_density[int((nanoparticle.radius+2)/bin[0].width)] << endl;
   else
-    file_for_auto_corr << cpmdstep - cpmdremote.hiteqm << "\t" << sample_density[int((dsphere.radius-2)/bin[0].width)] << endl;
+    file_for_auto_corr << cpmdstep - cpmdremote.hiteqm << "\t" << sample_density[int((nanoparticle.radius-2)/bin[0].width)] << endl;
 
   // write files
   if (cpmdstep % cpmdremote.writedensity == 0)
@@ -268,6 +287,7 @@ double compute_MD_trust_factor_R(int hiteqm)
   return R;
 }
 
+/*
 // auto correlation function
 void auto_correlation_function()
 {
@@ -309,4 +329,4 @@ void auto_correlation_function()
   cout << "Auto correlation function generated" << endl;
   return;
 }
-
+*/

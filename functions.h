@@ -10,6 +10,7 @@
 #include "control.h"
 #include "BIN.h"
 #include "thermostat.h"
+#include "forces.h"
 #include "energies.h"
 
 // general functions
@@ -25,19 +26,25 @@ void make_bins(vector<BIN>&, INTERFACE&, double);
 void bin_ions(vector<PARTICLE>&, INTERFACE&, vector<double>&, vector<BIN>&);
 
 // initialize particle velocities
-void initialize_particle_velocities(vector<PARTICLE>&, vector<THERMOSTAT>&);
+void initialize_particle_velocities(vector<PARTICLE>&, vector<THERMOSTAT>&, INTERFACE&);
 
 // initialize fake velocities
-void initialize_fake_velocities(vector<VERTEX>&, vector<THERMOSTAT>&);
+void initialize_fake_velocities(vector<VERTEX>&, vector<THERMOSTAT>&, INTERFACE&);
+
+// fictious molecular dynamics (fmd)
+void fmd(vector<VERTEX>&, vector<PARTICLE>&, INTERFACE&, CONTROL&, CONTROL&);
+
+// car parrinello molecular dynamics (cpmd)
+void cpmd(vector<PARTICLE>&, vector<VERTEX>&, INTERFACE&, vector<THERMOSTAT>&, vector<THERMOSTAT>&, vector<BIN>&, CONTROL&, CONTROL&);
 
 // compute and write useful data in cpmd
-void compute_n_write_useful_data(int, vector<PARTICLE>&, vector<VERTEX>&, vector<THERMOSTAT>&, vector<THERMOSTAT>&, INTERFACE&, PARTICLE&);
+void compute_n_write_useful_data(int, vector<PARTICLE>&, vector<VERTEX>&, vector<THERMOSTAT>&, vector<THERMOSTAT>&, INTERFACE&);
 
 // verify with F M D
-double verify_with_FMD(int, vector<VERTEX>, vector<PARTICLE>&, INTERFACE&, PARTICLE&, CONTROL&, CONTROL&);
+double verify_with_FMD(int, vector<VERTEX>, vector<PARTICLE>&, INTERFACE&, CONTROL&, CONTROL&);
 
 // make movie
-void make_movie(int num, vector<PARTICLE>& ion, INTERFACE& dsphere);
+void make_movie(int num, vector<PARTICLE>& ion, INTERFACE& nanoparticle);
 
 // compute density profile
 void compute_density_profile(int, double, vector<double>&, vector<double>&, vector<PARTICLE>&, INTERFACE&, vector<BIN>&, CONTROL&);
@@ -46,7 +53,7 @@ void compute_density_profile(int, double, vector<double>&, vector<double>&, vect
 double compute_MD_trust_factor_R(int);
 
 // post analysis : auto correlation function
-void auto_correlation_function();
+//void auto_correlation_function();
 
 
 // functions useful in computing forces and energies
@@ -86,15 +93,15 @@ inline VECTOR3D GradndotGrad(VECTOR3D& vec1, VECTOR3D& vec2, VECTOR3D& normal)
 // -------------------------------------------
 
 // constraint equation
-inline long double constraint(vector<VERTEX>& s, vector<PARTICLE>& ion, INTERFACE& dsphere)
+inline long double constraint(vector<VERTEX>& s, vector<PARTICLE>& ion, INTERFACE& nanoparticle)
 {
-  return dsphere.total_induced_charge(s) - dsphere.total_charge_inside(ion) * (1/dsphere.eout - 1/dsphere.ein);
+  return nanoparticle.total_induced_charge(s) - nanoparticle.total_charge_inside(ion) * (1/nanoparticle.eout - 1/nanoparticle.ein);
 }
 
 // SHAKE to ensure constraint is true
-inline void SHAKE(vector<VERTEX>& s, vector<PARTICLE>& ion, INTERFACE& dsphere, CONTROL& simremote)	// remote of the considered simulation
+inline void SHAKE(vector<VERTEX>& s, vector<PARTICLE>& ion, INTERFACE& nanoparticle, CONTROL& simremote)	// remote of the considered simulation
 {
-  long double sigma = constraint(s, ion, dsphere);
+  long double sigma = constraint(s, ion, nanoparticle);
   for (unsigned int k = 0; k < s.size(); k++)
     s[k].vw = s[k].vw - (1.0/simremote.timestep) * sigma / (s[k].a * int(s.size()));
   for (unsigned int k = 0; k < s.size(); k++)
@@ -140,7 +147,7 @@ inline void update_chain_xi(unsigned int j, vector<THERMOSTAT>& bath, double dt,
 // functions that write data files
 // -------------------------------
 
-inline void write_basic_files(int write, int cpmdstep, vector<PARTICLE>& ion, vector<VERTEX>& s, vector<THERMOSTAT>& real_bath, vector<THERMOSTAT>& fake_bath, INTERFACE& dsphere)
+inline void write_basic_files(int write, int cpmdstep, vector<PARTICLE>& ion, vector<VERTEX>& s, vector<THERMOSTAT>& real_bath, vector<THERMOSTAT>& fake_bath, INTERFACE& nanoparticle)
 {
   if (cpmdstep % write != 0)
     return;

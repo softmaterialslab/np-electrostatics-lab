@@ -5,7 +5,7 @@
 #include "forces.h"
 
 // Total Force on all degrees of freedom
-void for_fmd_calculate_force(vector<VERTEX>& s, vector<PARTICLE>& ion, INTERFACE& dsphere, PARTICLE& colloid) 
+void for_fmd_calculate_force(vector<VERTEX>& s, vector<PARTICLE>& ion, INTERFACE& nanoparticle) 
 {
   
   // force calculation for fake degrees of freedom
@@ -17,7 +17,7 @@ void for_fmd_calculate_force(vector<VERTEX>& s, vector<PARTICLE>& ion, INTERFACE
   // gwEq : force due to induced charge (w) - Electric field due to ion (Eq) interaction
   // gEwEq : force due to Electric field due to induced charge (Ew) - Electric field due to ion (Eq) interaction
   
-  if (dsphere.POLARIZED)
+  if (nanoparticle.POLARIZED)
   {
   
     // declarations (necessary beforehand for parallel implementation)
@@ -55,19 +55,19 @@ void for_fmd_calculate_force(vector<VERTEX>& s, vector<PARTICLE>& ion, INTERFACE
       {
 	gwq = 0;
 	for (i1 = 0; i1 < ion.size(); i1++) 
-	  gwq += (-1.0) * (0.5 - 0.5 * dsphere.em / ion[i1].epsilon) * ion[i1].q * s[kloop].Gion[i1];
+	  gwq += (-1.0) * (0.5 - 0.5 * nanoparticle.em / ion[i1].epsilon) * ion[i1].q * s[kloop].Gion[i1];
 	
 	gww_wEw_EwEw = 0;
 	for (l1 = 0; l1 < s.size(); l1++) 
-	  gww_wEw_EwEw +=  ( (-1.0)*dsphere.em*(dsphere.em - 1)*s[kloop].Greens[l1] + 0.5*dsphere.ed*(2*dsphere.em - 1)*s[kloop].presumgwEw[l1] + (-1.0)*dsphere.ed*dsphere.ed*s[kloop].presumgEwEw[l1] ) * s[l1].w * s[l1].a;
+	  gww_wEw_EwEw +=  ( (-1.0)*nanoparticle.em*(nanoparticle.em - 1)*s[kloop].Greens[l1] + 0.5*nanoparticle.ed*(2*nanoparticle.em - 1)*s[kloop].presumgwEw[l1] + (-1.0)*nanoparticle.ed*nanoparticle.ed*s[kloop].presumgEwEw[l1] ) * s[l1].w * s[l1].a;
 
 	gEwq = 0;
 	for (l1 = 0; l1 < s.size(); l1++)
-	  gEwq += (-1.0) * 0.5 * dsphere.ed * s[kloop].ndotGradGreens[l1] * innerg3[l1] * s[l1].a;
+	  gEwq += (-1.0) * 0.5 * nanoparticle.ed * s[kloop].ndotGradGreens[l1] * innerg3[l1] * s[l1].a;
 	
 	gwEq_EwEq = 0;
 	for (l1 = 0; l1 < s.size(); l1++)
-	  gwEq_EwEq += ( 0.5 * dsphere.ed * (2*dsphere.em - 1) * s[kloop].Greens[l1] + (-1.0) * dsphere.ed * dsphere.ed * s[kloop].presumgEwEq[l1] ) * innerg4[l1] * s[l1].a;
+	  gwEq_EwEq += ( 0.5 * nanoparticle.ed * (2*nanoparticle.em - 1) * s[kloop].Greens[l1] + (-1.0) * nanoparticle.ed * nanoparticle.ed * s[kloop].presumgEwEq[l1] ) * innerg4[l1] * s[l1].a;
 	
 	s[kloop].fw = gwq + gww_wEw_EwEw + gEwq + gwEq_EwEq;
       }

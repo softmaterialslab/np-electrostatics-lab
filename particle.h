@@ -28,8 +28,15 @@ class PARTICLE
   // member functions
   
   // make a particle
-  PARTICLE(int id = 0, double diameter = 0, int valency = 0, double charge = 0, double mass = 0, double diconst = 0, VECTOR3D position = VECTOR3D(0,0,0)) : id(id), diameter(diameter), valency(valency), q(charge), m(mass), epsilon(diconst), posvec(position)
+  PARTICLE(int get_id = 0, double get_diameter = 0, int get_valency = 0, double get_charge = 0, double get_mass = 0, double get_medium_dielectric_constant = 0, VECTOR3D get_position = VECTOR3D(0,0,0))
   {
+    id = get_id;
+    diameter = get_diameter;
+    valency = get_valency;
+    q = get_charge;
+    m = get_mass;
+    epsilon = get_medium_dielectric_constant;
+    posvec = get_position;
   }
   
   // update position of the particle

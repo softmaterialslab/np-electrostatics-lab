@@ -4,7 +4,7 @@
 #include "energies.h"
 
 // Potential energy
-double energy_functional(vector<VERTEX>& s, vector<PARTICLE>& ion, INTERFACE& dsphere, PARTICLE& colloid)
+double energy_functional(vector<VERTEX>& s, vector<PARTICLE>& ion, INTERFACE& nanoparticle)
 {
   // Electrostatic interaction
   // fww : potential energy due to induced charge and induced charge interaction
@@ -21,7 +21,7 @@ double energy_functional(vector<VERTEX>& s, vector<PARTICLE>& ion, INTERFACE& ds
   
   double potential;
   
-  if (dsphere.POLARIZED)
+  if (nanoparticle.POLARIZED)
   {
     vector<double> saveinner1(s.size(),0.0);
     vector<double> inner2(s.size(),0.0);
@@ -78,7 +78,7 @@ double energy_functional(vector<VERTEX>& s, vector<PARTICLE>& ion, INTERFACE& ds
       {
 	ind_ind = 0;
 	for (l = 0; l < s.size(); l++)
-	  ind_ind += s[k].w * s[k].a * ( (-0.5)*dsphere.ed*(2*dsphere.em - 1)*s[k].presumfwEw[l] +  0.5*dsphere.em*(dsphere.em - 1)*s[k].Greens[l] + 0.5*dsphere.ed*dsphere.ed*s[k].presumgEwEw[l] ) * s[l].w * s[l].a;
+	  ind_ind += s[k].w * s[k].a * ( (-0.5)*nanoparticle.ed*(2*nanoparticle.em - 1)*s[k].presumfwEw[l] +  0.5*nanoparticle.em*(nanoparticle.em - 1)*s[k].Greens[l] + 0.5*nanoparticle.ed*nanoparticle.ed*s[k].presumgEwEw[l] ) * s[l].w * s[l].a;
 	ind_energy[k] = ind_ind;
       }
 
@@ -94,19 +94,19 @@ double energy_functional(vector<VERTEX>& s, vector<PARTICLE>& ion, INTERFACE& ds
       
 	fwq = 0;
 	for (k = 0; k < s.size(); k++)
-	  fwq += ion[i].q * (0.5 - 0.5 * dsphere.em / ion[i].epsilon) * (1/((s[k].posvec - ion[i].posvec).GetMagnitude())) * s[k].w * s[k].a;
+	  fwq += ion[i].q * (0.5 - 0.5 * nanoparticle.em / ion[i].epsilon) * (1/((s[k].posvec - ion[i].posvec).GetMagnitude())) * s[k].w * s[k].a;
 
 	insum = 0;
 	for (k = 0; k < s.size(); k++)
 	  insum += (1.0/((ion[i].posvec-s[k].posvec).GetMagnitude())) * (saveinner1[k] + inner2[k]) * s[k].a;
-	fqEq_qEw = 0.5 * dsphere.ed * ion[i].q * insum / ion[i].epsilon;
+	fqEq_qEw = 0.5 * nanoparticle.ed * ion[i].q * insum / ion[i].epsilon;
 
 	insum = 0;
 	for(k = 0; k < s.size(); k++)
-	  insum += (s[k].normalvec * Grad(s[k].posvec,ion[i].posvec)) * ( (-1) * 0.5 * dsphere.ed * (2*dsphere.em - 1) * inner3[k] + 0.5 * dsphere.ed * dsphere.ed * inner4[k] + dsphere.ed * dsphere.ed * inner5[k] ) * s[k].a;
+	  insum += (s[k].normalvec * Grad(s[k].posvec,ion[i].posvec)) * ( (-1) * 0.5 * nanoparticle.ed * (2*nanoparticle.em - 1) * inner3[k] + 0.5 * nanoparticle.ed * nanoparticle.ed * inner4[k] + nanoparticle.ed * nanoparticle.ed * inner5[k] ) * s[k].a;
 	fwEq_EqEq_EwEq = (ion[i].q / ion[i].epsilon) * insum; 
 
-	ion_energy[i] = fqq + fwq + fqEq_qEw + fwEq_EqEq_EwEq + colloid.q * ion[i].q * (1.0 / ion[i].epsilon) / ( (ion[i].posvec - colloid.posvec).GetMagnitude() );
+	ion_energy[i] = fqq + fwq + fqEq_qEw + fwEq_EqEq_EwEq + nanoparticle.bare_charge * ion[i].q * (1.0 / ion[i].epsilon) / ( (ion[i].posvec - nanoparticle.posvec).GetMagnitude() );
       }
     }
 
@@ -138,7 +138,7 @@ double energy_functional(vector<VERTEX>& s, vector<PARTICLE>& ion, INTERFACE& ds
 	  if (i == j) continue;
 	  fqq += 0.5 * ion[i].q * ion[j].q * (1.0 / ion[i].epsilon) / ((ion[i].posvec - ion[j].posvec).GetMagnitude());
 	}
-	ion_energy[i] = fqq + colloid.q * ion[i].q * (1.0 / ion[i].epsilon) / ( (ion[i].posvec - colloid.posvec).GetMagnitude() );
+	ion_energy[i] = fqq + nanoparticle.bare_charge * ion[i].q * (1.0 / ion[i].epsilon) / ( (ion[i].posvec - nanoparticle.posvec).GetMagnitude() );
       }
     }
 
@@ -158,12 +158,12 @@ double energy_functional(vector<VERTEX>& s, vector<PARTICLE>& ion, INTERFACE& ds
   for (unsigned int i = 0; i < ion.size(); i++)
   {
     double uljcs = 0.0;
-    if (ion[i].posvec.GetMagnitude() < dsphere.radius)
+    if (ion[i].posvec.GetMagnitude() < nanoparticle.radius)
     {
       lj1.push_back(uljcs);
       continue;
     }
-    PARTICLE dummy = PARTICLE(0,ion[i].diameter,0,0,0,dsphere.ein,ion[i].posvec^((dsphere.radius - 0.5*ion[i].diameter)/ion[i].posvec.GetMagnitude()));
+    PARTICLE dummy = PARTICLE(0,ion[i].diameter,0,0,0,nanoparticle.ein,ion[i].posvec^((nanoparticle.radius - 0.5*ion[i].diameter)/ion[i].posvec.GetMagnitude()));
     VECTOR3D r_vec = ion[i].posvec - dummy.posvec;
     double r = r_vec.GetMagnitude();
     double d = 0.5 * (ion[i].diameter + dummy.diameter);
@@ -211,7 +211,7 @@ double energy_functional(vector<VERTEX>& s, vector<PARTICLE>& ion, INTERFACE& ds
   for (unsigned int i = 0; i < ion.size(); i++)
   {
     double uljcb = 0.0;
-    PARTICLE dummy = PARTICLE(0,ion[i].diameter,0,0,0,dsphere.eout,ion[i].posvec^((dsphere.box_radius + 0.5*ion[i].diameter)/ion[i].posvec.GetMagnitude()));
+    PARTICLE dummy = PARTICLE(0,ion[i].diameter,0,0,0,nanoparticle.eout,ion[i].posvec^((nanoparticle.box_radius + 0.5*ion[i].diameter)/ion[i].posvec.GetMagnitude()));
     VECTOR3D r_vec = ion[i].posvec - dummy.posvec;
     double r = r_vec.GetMagnitude();
     double d = 0.5 * (ion[i].diameter + dummy.diameter);
@@ -233,12 +233,12 @@ double energy_functional(vector<VERTEX>& s, vector<PARTICLE>& ion, INTERFACE& ds
   for (unsigned int i = 0; i < ion.size(); i++)
   {
     double uljcs = 0.0;					
-    if (ion[i].posvec.GetMagnitude() > dsphere.radius)
+    if (ion[i].posvec.GetMagnitude() > nanoparticle.radius)
     {
       lj4.push_back(uljcs);
       continue;
     }
-    PARTICLE dummy = PARTICLE(0,ion[i].diameter,0,0,0,dsphere.eout,ion[i].posvec^((dsphere.radius + 0.5*ion[i].diameter)/ion[i].posvec.GetMagnitude()));
+    PARTICLE dummy = PARTICLE(0,ion[i].diameter,0,0,0,nanoparticle.eout,ion[i].posvec^((nanoparticle.radius + 0.5*ion[i].diameter)/ion[i].posvec.GetMagnitude()));
     VECTOR3D r_vec = ion[i].posvec - dummy.posvec;
     double r = r_vec.GetMagnitude();
     double d = 0.5 * (ion[i].diameter + dummy.diameter);

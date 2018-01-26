@@ -49,7 +49,7 @@ inline double bath_potential_energy(vector<THERMOSTAT>& bath)
   return potential_energy;
 }
 
-double energy_functional(vector<VERTEX>&, vector<PARTICLE>&, INTERFACE&, PARTICLE&);
+double energy_functional(vector<VERTEX>&, vector<PARTICLE>&, INTERFACE&);
 
 #endif
 

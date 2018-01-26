@@ -39,8 +39,11 @@ class VERTEX
   // member functions
   
   // make a vertex
-  VERTEX(VECTOR3D position = VECTOR3D(0,0,0), double area = 0, VECTOR3D normal = VECTOR3D(0,0,0)) : posvec(position), a(area), normalvec(normal)
+  VERTEX(VECTOR3D get_position = VECTOR3D(0,0,0), double get_area = 0, VECTOR3D get_normal = VECTOR3D(0,0,0))
   {
+    posvec = get_position;
+    a = get_area;
+    normalvec = get_normal;
   }
   
   // update position of fake degree
