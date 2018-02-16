@@ -5,9 +5,9 @@
 PROG = np_electrostatics_lab
 OBJ = main.o interface.o functions.o parallel_precal.o pfmdforces.o pcpmdforces.o penergies.o fmd.o cpmd.o
 
-CC = g++ -O3 -g -fopenmp -Wall -g
+CC = CC -O3 -g -fopenmp -Wall
 
-LFLAG = -lgsl -lgslcblas -lm -lboost_program_options
+LFLAG = -lgsl -lgslcblas -lm -lboost_program_options -lboost_mpi -lboost_serialization
 
 CFLAG = -c
 
@@ -15,10 +15,8 @@ OFLAG = -o
 
 all: $(PROG)
 
-#dirs: 
-#	@echo "Creating needed sub-directories in the current directory"; mkdir outfiles; mkdir datafiles; mkdir verifiles; mkdir computedfiles
-
 install: all
+	@echo "Creating needed sub-directories in the current directory"; mkdir outfiles; mkdir datafiles; mkdir verifiles; mkdir computedfiles
 	@echo "Installing $(PROG) into current directory"
 
 $(PROG) : $(OBJ)

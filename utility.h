@@ -12,9 +12,16 @@
 #include<vector>
 #include<gsl/gsl_rng.h>
 #include<gsl/gsl_randist.h>
+//OPENMP
+#include <omp.h>
+//BOOST MPI
+#include <boost/mpi.hpp>
+#include <boost/mpi/environment.hpp>
+#include <boost/mpi/communicator.hpp>
+#include <boost/serialization/vector.hpp>
+#include <boost/serialization/base_object.hpp>
 
-#define CHUNKSIZE 1				// for parallel implementation
-#define THREADSIZE 4
+namespace mpi = boost::mpi;
 
 using namespace std;
 

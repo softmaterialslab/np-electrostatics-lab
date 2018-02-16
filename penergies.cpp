@@ -38,9 +38,9 @@ double energy_functional(vector<VERTEX>& s, vector<PARTICLE>& ion, INTERFACE& na
     vector<double> ind_energy(s.size(),0.0);
     vector<double> ion_energy(ion.size(), 0.0);
 
-    #pragma omp parallel default(shared) private(k, l, i, j, insum, ind_ind, fqq, fwq, fqEq_qEw, fwEq_EqEq_EwEq) num_threads(THREADSIZE)
+    #pragma omp parallel default(shared) private(k, l, i, j, insum, ind_ind, fqq, fwq, fqEq_qEw, fwEq_EqEq_EwEq)
     {
-      #pragma omp for schedule(dynamic,CHUNKSIZE)
+      #pragma omp for schedule(dynamic)
       for (k = 0; k < s.size(); k++)
       {
 	insum = 0;
@@ -49,7 +49,7 @@ double energy_functional(vector<VERTEX>& s, vector<PARTICLE>& ion, INTERFACE& na
 	saveinner1[k] = insum;
       }
 	
-      #pragma omp for schedule(dynamic,CHUNKSIZE)
+      #pragma omp for schedule(dynamic)
       for (k = 0; k < s.size(); k++)
       {
 	insum = 0;
@@ -73,7 +73,7 @@ double energy_functional(vector<VERTEX>& s, vector<PARTICLE>& ion, INTERFACE& na
 	inner5[k] = insum;
       }
 
-      #pragma omp for schedule(dynamic,CHUNKSIZE) nowait
+      #pragma omp for schedule(dynamic) nowait
       for (k = 0; k < s.size(); k++)
       {
 	ind_ind = 0;
@@ -82,7 +82,7 @@ double energy_functional(vector<VERTEX>& s, vector<PARTICLE>& ion, INTERFACE& na
 	ind_energy[k] = ind_ind;
       }
 
-      #pragma omp for schedule(dynamic,CHUNKSIZE) nowait
+      #pragma omp for schedule(dynamic) nowait
       for (i = 0; i < ion.size(); i++)
       {
 	fqq = 0;
@@ -127,9 +127,9 @@ double energy_functional(vector<VERTEX>& s, vector<PARTICLE>& ion, INTERFACE& na
     unsigned int i, j;
     double fqq;
     vector<double> ion_energy(ion.size(), 0.0);
-    #pragma omp parallel default(shared) private(i, j, fqq) num_threads(THREADSIZE)
+    #pragma omp parallel default(shared) private(i, j, fqq)
     {
-      #pragma omp for schedule(dynamic,CHUNKSIZE) nowait
+      #pragma omp for schedule(dynamic) nowait
       for (i = 0; i < ion.size(); i++)
       {
 	fqq = 0;

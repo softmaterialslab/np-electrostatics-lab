@@ -10,6 +10,33 @@
 
 class INTERFACE
 {
+
+  private:
+    friend class boost::serialization::access;
+
+    template<class Archive>
+    void serialize(Archive &ar, const unsigned int version)
+    {
+      ar & posvec;
+      ar & radius;
+      ar & ein;
+      ar & eout;
+      ar & em;
+      ar & ed;
+      ar & box_radius;
+      ar & lB_in;
+      ar & lB_out;
+      ar & inv_kappa_in;
+      ar & inv_kappa_out;
+      ar & mean_sep_in;
+      ar & mean_sep_out;
+      ar & number_of_vertices;
+      ar & bare_charge;
+      ar & POLARIZED;
+      ar & RANDOMIZE_ION_FEATURES;
+
+    }
+
   public:
 
   VECTOR3D posvec;		// position vector of the inteface, for sphere its center
@@ -41,12 +68,13 @@ class INTERFACE
   void put_saltions_outside(vector<PARTICLE>&, int, double, double, vector<PARTICLE>&);
   void discretize(vector<VERTEX>&);
   
-  INTERFACE(VECTOR3D get_posvec = VECTOR3D(0,0,0), double get_radius = 0, double get_ein = 1, double get_eout = 1)
+  INTERFACE(VECTOR3D get_posvec = VECTOR3D(0,0,0), double get_radius = 0, double get_ein = 1, double get_eout = 1, double get_bare_charge = 0)
   {
     posvec = get_posvec;
     radius = get_radius;
     ein = get_ein;
     eout = get_eout;
+    bare_charge=get_bare_charge;
   }
   
   // total charge inside

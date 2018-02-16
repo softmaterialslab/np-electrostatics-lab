@@ -27,9 +27,9 @@ void for_fmd_calculate_force(vector<VERTEX>& s, vector<PARTICLE>& ion, INTERFACE
     vector<long double> innerg4(s.size(),0.0);
     
     // some pre-summations (Green's function, gradient of Green's function, gEwq, gwEq)
-    #pragma omp parallel default(shared) private(kloop, l1, i1, gEwq, gwEq, gwq, gwEq_EwEq, gww_wEw_EwEw) num_threads(THREADSIZE)
+    #pragma omp parallel default(shared) private(kloop, l1, i1, gEwq, gwEq, gwq, gwEq_EwEq, gww_wEw_EwEw)
     {
-      #pragma omp for schedule(dynamic,CHUNKSIZE)
+      #pragma omp for schedule(dynamic)
       for (kloop = 0; kloop < s.size(); kloop++)
       {
 	for (i1 = 0; i1 < ion.size(); i1++)
@@ -50,7 +50,7 @@ void for_fmd_calculate_force(vector<VERTEX>& s, vector<PARTICLE>& ion, INTERFACE
       }
       
       // calculate force
-      #pragma omp for schedule(dynamic,CHUNKSIZE) nowait
+      #pragma omp for schedule(dynamic) nowait
       for (kloop = 0; kloop < s.size(); kloop++)
       {
 	gwq = 0;

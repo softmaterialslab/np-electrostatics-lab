@@ -3,288 +3,334 @@
 #include "functions.h"
 
 // overload out
-ostream& operator<<(ostream& os, VECTOR3D vec)
-{
-  os << vec.x << setw(15) << vec.y << setw(15) << vec.z;
-  return os;
+ostream &operator<<(ostream &os, VECTOR3D vec) {
+    os << vec.x << setw(15) << vec.y << setw(15) << vec.z;
+    return os;
 }
 
 // make bins
-void make_bins(vector<BIN>& bin, INTERFACE& nanoparticle, double bin_width)
-{
-  unsigned int number_of_bins = int(nanoparticle.box_radius / bin_width);	
-  bin.resize(number_of_bins);
-  for (unsigned int bin_num = 0; bin_num < bin.size(); bin_num++)
-    bin[bin_num].set_up(bin_num, bin_width);
-  ofstream listbin ("outfiles/listbin.dat");
-  for (unsigned int num = 0; num < bin.size(); num++)
-    listbin << bin[num].n << setw(15) << bin[num].width << setw(15) << bin[num].volume << setw(15) << bin[num].lower << setw(15) << bin[num].higher << endl;
-  listbin.close(); 
-  return;
+void make_bins(vector<BIN> &bin, INTERFACE &nanoparticle, double bin_width) {
+    mpi::environment env;
+    mpi::communicator world;
+
+    unsigned int number_of_bins = int(nanoparticle.box_radius / bin_width);
+    bin.resize(number_of_bins);
+    for (unsigned int bin_num = 0; bin_num < bin.size(); bin_num++)
+        bin[bin_num].set_up(bin_num, bin_width);
+    if (world.rank() == 0) {
+        ofstream listbin("outfiles/listbin.dat");
+        for (unsigned int num = 0; num < bin.size(); num++)
+            listbin << bin[num].n << setw(15) << bin[num].width << setw(15) << bin[num].volume << setw(15)
+                    << bin[num].lower
+                    << setw(15) << bin[num].higher << endl;
+        listbin.close();
+    }
+    return;
 }
 
 // bin ions to get density profile
-void bin_ions(vector<PARTICLE>& ion, INTERFACE& nanoparticle, vector<double>& density, vector<BIN>& bin)
-{
-  double r;
-  int bin_number;
-  for (unsigned int bin_num = 0; bin_num < bin.size(); bin_num++)
-    bin[bin_num].n = 0;
-  for (unsigned int i = 0; i < ion.size(); i++)
-  {
-    r = ion[i].posvec.GetMagnitude();
-    bin_number = int(r/bin[0].width);
-    bin[bin_number].n = bin[bin_number].n + 1;
-  }
-  for (unsigned int bin_num = 0; bin_num < bin.size(); bin_num++)
-    density.push_back(bin[bin_num].n / bin[bin_num].volume);			// push_back is the culprit, array goes out of bound
-  return;
+void bin_ions(vector<PARTICLE> &ion, INTERFACE &nanoparticle, vector<double> &density, vector<BIN> &bin) {
+    double r;
+    int bin_number;
+    for (unsigned int bin_num = 0; bin_num < bin.size(); bin_num++)
+        bin[bin_num].n = 0;
+    for (unsigned int i = 0; i < ion.size(); i++) {
+        r = ion[i].posvec.GetMagnitude();
+        bin_number = int(r / bin[0].width);
+        bin[bin_number].n = bin[bin_number].n + 1;
+    }
+    for (unsigned int bin_num = 0; bin_num < bin.size(); bin_num++)
+        density.push_back(
+                bin[bin_num].n / bin[bin_num].volume);            // push_back is the culprit, array goes out of bound
+    return;
 }
 
 // initialize velocities of particles to start simulation
-void initialize_particle_velocities(vector<PARTICLE>& ion, vector<THERMOSTAT>& bath, INTERFACE& nanoparticle)
-{
-  if (bath.size() == 1)
-  {
-    for (unsigned int i = 0; i < ion.size(); i++) 
-      ion[i].velvec = VECTOR3D(0,0,0);					// initialized velocities
-    cout << "No thermostat for real system" << endl;
+void initialize_particle_velocities(vector<PARTICLE> &ion, vector<THERMOSTAT> &bath, INTERFACE &nanoparticle) {
+    mpi::environment env;
+    mpi::communicator world;
+    if (bath.size() == 1) {
+        for (unsigned int i = 0; i < ion.size(); i++)
+            ion[i].velvec = VECTOR3D(0, 0, 0);                    // initialized velocities
+        if (world.rank() == 0)
+            cout << "No thermostat for real system" << endl;
+        return;
+    }
+
+    if (nanoparticle.RANDOMIZE_ION_FEATURES) {
+        double p_sigma = sqrt(kB * bath[0].T / (2.0 * ion[0].m));        // Maxwell distribution width
+        UTILITY ugsl;
+        for (unsigned int i = 0; i < ion.size(); i++)
+            ion[i].velvec = VECTOR3D(gsl_ran_gaussian(ugsl.r, p_sigma), gsl_ran_gaussian(ugsl.r, p_sigma),
+                                     gsl_ran_gaussian(ugsl.r, p_sigma));    // initialized velocities
+    } else {
+        for (unsigned int i = 0; i < ion.size(); i++)
+            ion[i].velvec = VECTOR3D(0, 0, 0);
+    }
+
+    VECTOR3D average_velocity_vector = VECTOR3D(0, 0, 0);
+    for (unsigned int i = 0; i < ion.size(); i++)
+        average_velocity_vector = average_velocity_vector + ion[i].velvec;
+    average_velocity_vector = average_velocity_vector ^ (1.0 / ion.size());
+    for (unsigned int i = 0; i < ion.size(); i++)
+        ion[i].velvec = ion[i].velvec - average_velocity_vector;
     return;
-  }
-  
-  if (nanoparticle.RANDOMIZE_ION_FEATURES)
-  {
-    double p_sigma = sqrt(kB * bath[0].T / (2.0 * ion[0].m));		// Maxwell distribution width
-    UTILITY ugsl;
-    for (unsigned int i = 0; i < ion.size(); i++) 
-      ion[i].velvec = VECTOR3D(gsl_ran_gaussian(ugsl.r,p_sigma), gsl_ran_gaussian(ugsl.r,p_sigma), gsl_ran_gaussian(ugsl.r,p_sigma));	// initialized velocities
-  }
-  else
-  {
-    for (unsigned int i = 0; i < ion.size(); i++) 
-      ion[i].velvec = VECTOR3D(0,0,0);	
-  }
-  
-  VECTOR3D average_velocity_vector = VECTOR3D(0,0,0);
-  for (unsigned int i = 0; i < ion.size(); i++) 
-    average_velocity_vector = average_velocity_vector + ion[i].velvec;
-  average_velocity_vector = average_velocity_vector ^ (1.0/ion.size());
-  for (unsigned int i = 0; i < ion.size(); i++) 
-    ion[i].velvec = ion[i].velvec - average_velocity_vector;
-  return;
 }
 
 // initialize velocities of fake degrees to start simulation
-void initialize_fake_velocities(vector<VERTEX>& s, vector<THERMOSTAT>& fake_bath, INTERFACE& nanoparticle)
-{
-  if (fake_bath.size() == 1)	// only the dummy is there
-  {
-    for (unsigned int k = 0; k < s.size(); k++)
-      s[k].vw = 0.0;
-    cout << "No thermostat for fake system" << endl;
-    return;
-  }
-  
-  if (nanoparticle.RANDOMIZE_ION_FEATURES)
-  {
-    double w_sigma = sqrt(kB * fake_bath[0].T / (2.0 * s[0].mu));		// Maxwell distribution width
-    UTILITY ugsl;
-    for (unsigned int k = 0; k < s.size(); k++) 
+void initialize_fake_velocities(vector<VERTEX> &s, vector<THERMOSTAT> &fake_bath, INTERFACE &nanoparticle) {
+    mpi::environment env;
+    mpi::communicator world;
+    if (fake_bath.size() == 1)    // only the dummy is there
     {
-      s[k].vw = gsl_ran_gaussian(ugsl.r,w_sigma);	// initialized velocities
+        for (unsigned int k = 0; k < s.size(); k++)
+            s[k].vw = 0.0;
+        if (world.rank() == 0)
+            cout << "No thermostat for fake system" << endl;
+        return;
     }
-  }
-  else
-  {
-    for (unsigned int k = 0; k < s.size(); k++) 
-      s[k].vw = 0.0;	
-  }
-  
-  double average_fake_momentum = 0.0;
-  for (unsigned int k = 0; k < s.size(); k++) 
-    average_fake_momentum = average_fake_momentum + s[k].mu * s[k].vw;
-  average_fake_momentum = average_fake_momentum * (1.0/s.size());
-  for (unsigned int k = 0; k < s.size(); k++) 
-    s[k].vw = s[k].vw - average_fake_momentum / (s[k].mu);
-  return;
+
+    if (nanoparticle.RANDOMIZE_ION_FEATURES) {
+        double w_sigma = sqrt(kB * fake_bath[0].T / (2.0 * s[0].mu));        // Maxwell distribution width
+        UTILITY ugsl;
+        for (unsigned int k = 0; k < s.size(); k++) {
+            s[k].vw = gsl_ran_gaussian(ugsl.r, w_sigma);    // initialized velocities
+        }
+    } else {
+        for (unsigned int k = 0; k < s.size(); k++)
+            s[k].vw = 0.0;
+    }
+
+    double average_fake_momentum = 0.0;
+    for (unsigned int k = 0; k < s.size(); k++)
+        average_fake_momentum = average_fake_momentum + s[k].mu * s[k].vw;
+    average_fake_momentum = average_fake_momentum * (1.0 / s.size());
+    for (unsigned int k = 0; k < s.size(); k++)
+        s[k].vw = s[k].vw - average_fake_momentum / (s[k].mu);
+    return;
 }
 
 // compute additional quantities
-void compute_n_write_useful_data(int cpmdstep, vector<PARTICLE>& ion, vector<VERTEX>& s, vector<THERMOSTAT>& real_bath, vector<THERMOSTAT>& fake_bath, INTERFACE& nanoparticle)
-{
-  ofstream list_tic ("outfiles/total_induced_charge.dat", ios::app);
-  ofstream list_temperature ("outfiles/temperature.dat", ios::app);
-  ofstream list_energy ("outfiles/energy.dat", ios::app);
-  list_temperature << cpmdstep << setw(15) << 2*particle_kinetic_energy(ion)/(real_bath[0].dof*kB) << setw(15) << real_bath[0].T << setw(15) << 2*fake_kinetic_energy(s)/(fake_bath[0].dof*kB) << setw(15) << fake_bath[0].T << endl;
-  list_tic << cpmdstep << setw(15) << nanoparticle.total_induced_charge(s) << endl;
-  double fake_ke = fake_kinetic_energy(s);
-  double particle_ke = particle_kinetic_energy(ion);
-  double potential_energy = energy_functional(s, ion, nanoparticle);
-  double real_bath_ke = bath_kinetic_energy(real_bath);
-  double real_bath_pe = bath_potential_energy(real_bath);
-  double fake_bath_ke = bath_kinetic_energy(fake_bath);
-  double fake_bath_pe = bath_potential_energy(fake_bath);
-  double extenergy = fake_ke + particle_ke + potential_energy + real_bath_ke + real_bath_pe + fake_bath_ke + fake_bath_pe;
-  list_energy << cpmdstep << setw(15) << extenergy << setw(15) << particle_ke << setw(15) << potential_energy << setw(15) << particle_ke + potential_energy + real_bath_ke + real_bath_pe << setw(15) << fake_ke << setw(15) << fake_ke + fake_bath_ke + fake_bath_pe << setw(15) << real_bath_ke << setw(15) << real_bath_pe << setw(15) << fake_bath_ke << setw(15) << fake_bath_pe << endl;
+void compute_n_write_useful_data(int cpmdstep, vector<PARTICLE> &ion, vector<VERTEX> &s, vector<THERMOSTAT> &real_bath,
+                                 vector<THERMOSTAT> &fake_bath, INTERFACE &nanoparticle) {
+    mpi::environment env;
+    mpi::communicator world;
+    if (world.rank() == 0) {
+        ofstream list_tic("outfiles/total_induced_charge.dat", ios::app);
+        ofstream list_temperature("outfiles/temperature.dat", ios::app);
+        ofstream list_energy("outfiles/energy.dat", ios::app);
+        list_temperature << cpmdstep << setw(15) << 2 * particle_kinetic_energy(ion) / (real_bath[0].dof * kB)
+                         << setw(15)
+                         << real_bath[0].T << setw(15) << 2 * fake_kinetic_energy(s) / (fake_bath[0].dof * kB)
+                         << setw(15)
+                         << fake_bath[0].T << endl;
+        list_tic << cpmdstep << setw(15) << nanoparticle.total_induced_charge(s) << endl;
+        double fake_ke = fake_kinetic_energy(s);
+        double particle_ke = particle_kinetic_energy(ion);
+        double potential_energy = energy_functional(s, ion, nanoparticle);
+        double real_bath_ke = bath_kinetic_energy(real_bath);
+        double real_bath_pe = bath_potential_energy(real_bath);
+        double fake_bath_ke = bath_kinetic_energy(fake_bath);
+        double fake_bath_pe = bath_potential_energy(fake_bath);
+        double extenergy =
+                fake_ke + particle_ke + potential_energy + real_bath_ke + real_bath_pe + fake_bath_ke + fake_bath_pe;
+        list_energy << cpmdstep << setw(15) << extenergy << setw(15) << particle_ke << setw(15) << potential_energy
+                    << setw(15) << particle_ke + potential_energy + real_bath_ke + real_bath_pe << setw(15) << fake_ke
+                    << setw(15) << fake_ke + fake_bath_ke + fake_bath_pe << setw(15) << real_bath_ke << setw(15)
+                    << real_bath_pe << setw(15) << fake_bath_ke << setw(15) << fake_bath_pe << endl;
+    }
 }
 
 // verify on the fly properties with exact
-double verify_with_FMD(int cpmdstep, vector<VERTEX> s, vector<PARTICLE>& ion, INTERFACE& nanoparticle, CONTROL& fmdremote, CONTROL& cpmdremote)
-{
-  vector<VERTEX> exact_s;
-  exact_s = s;
-  fmdremote.verify = cpmdstep;
-  fmd(exact_s, ion, nanoparticle, fmdremote, cpmdremote);
-  for (unsigned int k = 0; k < s.size(); k++)
-    exact_s[k].w = exact_s[k].wmean;
-  double exact_functional = energy_functional(exact_s, ion, nanoparticle);
-  double on_the_fly_functional = energy_functional(s, ion, nanoparticle);
-  double functional_deviation = 0;
-  for (unsigned int k = 0; k < s.size(); k++)
-    functional_deviation = functional_deviation + 100 * (on_the_fly_functional - exact_functional) / exact_functional;
-  functional_deviation = functional_deviation / s.size();
-  ofstream track_density ("outfiles/track_density.dat", ios::app);
-  ofstream track_functional ("outfiles/track_functional.dat", ios::app);
-  ofstream track_functional_deviation ("outfiles/track_deviation.dat", ios::app);
-  track_density << cpmdstep << setw(15) << s[0].w << setw(15) << exact_s[0].w << endl;
-  track_functional << cpmdstep << setw(15) << on_the_fly_functional << setw(15) << exact_functional << endl;
-  track_functional_deviation << cpmdstep << setw(15) << functional_deviation << endl;
-  
-  // write exact induced density
-  char data[200];
-  sprintf(data, "verifiles/_ind_%.06d.dat", cpmdstep);
-  ofstream out_correct_ind;
-  out_correct_ind.open(data);
-  for (unsigned int k = 0; k < s.size(); k++)
-    out_correct_ind << k+1 << " " << exact_s[k].theta << " " << exact_s[k].phi << " " << exact_s[k].wmean << endl;
-  
-  // write cpmd computed induced density
-  sprintf(data, "computedfiles/_cpmdind_%.06d.dat", cpmdstep);
-  ofstream out_cpmd_ind;
-  out_cpmd_ind.open(data);
-  for (unsigned int k = 0; k < s.size(); k++)
-    out_cpmd_ind << k+1 << " " << s[k].theta << " " << s[k].phi << " " << s[k].w << endl;
-  return functional_deviation;
+double
+verify_with_FMD(int cpmdstep, vector<VERTEX> s, vector<PARTICLE> &ion, INTERFACE &nanoparticle, CONTROL &fmdremote,
+                CONTROL &cpmdremote) {
+    mpi::environment env;
+    mpi::communicator world;
+    vector<VERTEX> exact_s;
+    exact_s = s;
+    fmdremote.verify = cpmdstep;
+    fmd(exact_s, ion, nanoparticle, fmdremote, cpmdremote);
+    for (unsigned int k = 0; k < s.size(); k++)
+        exact_s[k].w = exact_s[k].wmean;
+    double exact_functional = energy_functional(exact_s, ion, nanoparticle);
+    double on_the_fly_functional = energy_functional(s, ion, nanoparticle);
+    double functional_deviation = 0;
+    for (unsigned int k = 0; k < s.size(); k++)
+        functional_deviation =
+                functional_deviation + 100 * (on_the_fly_functional - exact_functional) / exact_functional;
+    functional_deviation = functional_deviation / s.size();
+    if (world.rank() == 0) {
+        ofstream track_density("outfiles/track_density.dat", ios::app);
+        ofstream track_functional("outfiles/track_functional.dat", ios::app);
+        ofstream track_functional_deviation("outfiles/track_deviation.dat", ios::app);
+        track_density << cpmdstep << setw(15) << s[0].w << setw(15) << exact_s[0].w << endl;
+        track_functional << cpmdstep << setw(15) << on_the_fly_functional << setw(15) << exact_functional << endl;
+        track_functional_deviation << cpmdstep << setw(15) << functional_deviation << endl;
+
+        // write exact induced density
+        char data[200];
+        sprintf(data, "verifiles/_ind_%.06d.dat", cpmdstep);
+        ofstream out_correct_ind;
+        out_correct_ind.open(data);
+        for (unsigned int k = 0; k < s.size(); k++)
+            out_correct_ind << k + 1 << " " << exact_s[k].theta << " " << exact_s[k].phi << " " << exact_s[k].wmean
+                            << endl;
+
+        // write cpmd computed induced density
+        sprintf(data, "computedfiles/_cpmdind_%.06d.dat", cpmdstep);
+        ofstream out_cpmd_ind;
+        out_cpmd_ind.open(data);
+        for (unsigned int k = 0; k < s.size(); k++)
+            out_cpmd_ind << k + 1 << " " << s[k].theta << " " << s[k].phi << " " << s[k].w << endl;
+    }
+    return functional_deviation;
 }
 
 // make movie
-void make_movie(int num, vector<PARTICLE>& ion, INTERFACE& nanoparticle)
-{
-  ofstream outdump("outfiles/p.lammpstrj", ios::app);
-  outdump << "ITEM: TIMESTEP" << endl;
-  outdump << num - 1 << endl;
-  outdump << "ITEM: NUMBER OF ATOMS" << endl;
-  outdump << ion.size() << endl;
-  outdump << "ITEM: BOX BOUNDS" << endl;
-  outdump << -nanoparticle.box_radius << "\t" << nanoparticle.box_radius << endl;
-  outdump << -nanoparticle.box_radius << "\t" << nanoparticle.box_radius << endl;
-  outdump << -nanoparticle.box_radius << "\t" << nanoparticle.box_radius << endl;
-  outdump << "ITEM: ATOMS index type x y z" << endl;
-  string type;
-  for (unsigned int i = 0; i < ion.size(); i++)
-  {
-    if (ion[i].valency > 0)
-      type = "1";
-    else
-      type = "-1";
-    outdump << setw(6) << i << "\t" << type << "\t" << setw(8) << ion[i].posvec.x << "\t" << setw(8) << ion[i].posvec.y << "\t" << setw(8) << ion[i].posvec.z << endl;
-  }
-  outdump.close();
-  return;
+void make_movie(int num, vector<PARTICLE> &ion, INTERFACE &nanoparticle) {
+    mpi::environment env;
+    mpi::communicator world;
+    if (world.rank() == 0) {
+        ofstream outdump("outfiles/p.lammpstrj", ios::app);
+        outdump << "ITEM: TIMESTEP" << endl;
+        outdump << num - 1 << endl;
+        outdump << "ITEM: NUMBER OF ATOMS" << endl;
+        outdump << ion.size() << endl;
+        outdump << "ITEM: BOX BOUNDS" << endl;
+        outdump << -nanoparticle.box_radius << "\t" << nanoparticle.box_radius << endl;
+        outdump << -nanoparticle.box_radius << "\t" << nanoparticle.box_radius << endl;
+        outdump << -nanoparticle.box_radius << "\t" << nanoparticle.box_radius << endl;
+        outdump << "ITEM: ATOMS index type x y z" << endl;
+        string type;
+        for (unsigned int i = 0; i < ion.size(); i++) {
+            if (ion[i].valency > 0)
+                type = "1";
+            else
+                type = "-1";
+            outdump << setw(6) << i << "\t" << type << "\t" << setw(8) << ion[i].posvec.x << "\t" << setw(8)
+                    << ion[i].posvec.y << "\t" << setw(8) << ion[i].posvec.z << endl;
+        }
+        outdump.close();
+    }
+    return;
 }
 
 // compute density profile
-void compute_density_profile(int cpmdstep, double density_profile_samples, vector<double>& mean_density, vector<double>& mean_sq_density, vector<PARTICLE>& ion, INTERFACE& nanoparticle, vector<BIN>& bin, CONTROL& cpmdremote)
-{
-  vector<double> sample_density;
-  ofstream file_for_auto_corr ("outfiles/for_auto_corr.dat", ios::app);
-      
-  bin_ions(ion, nanoparticle, sample_density, bin);
-  for (unsigned int b = 0; b < mean_density.size(); b++)
-    mean_density.at(b) = mean_density.at(b) + sample_density.at(b);
-  for (unsigned int b = 0; b < sample_density.size(); b++)
-    mean_sq_density.at(b) = mean_sq_density.at(b) + sample_density.at(b)*sample_density.at(b);
-  
-  // write a file for post analysis to get auto correlation time		// NOTE this is assuming ions do not cross the interface
-  if (ion[0].posvec.GetMagnitude() > nanoparticle.radius)
-    file_for_auto_corr << cpmdstep - cpmdremote.hiteqm << "\t" << sample_density[int((nanoparticle.radius+2)/bin[0].width)] << endl;
-  else
-    file_for_auto_corr << cpmdstep - cpmdremote.hiteqm << "\t" << sample_density[int((nanoparticle.radius-2)/bin[0].width)] << endl;
+void compute_density_profile(int cpmdstep, double density_profile_samples, vector<double> &mean_density,
+                             vector<double> &mean_sq_density, vector<PARTICLE> &ion, INTERFACE &nanoparticle,
+                             vector<BIN> &bin, CONTROL &cpmdremote) {
+    mpi::environment env;
+    mpi::communicator world;
 
-  // write files
-  if (cpmdstep % cpmdremote.writedensity == 0)
-  {
-    char data[200];
-    sprintf(data, "datafiles/_den_%.06d.dat", cpmdstep);
-    ofstream outden;
-    outden.open(data);
-    for (unsigned int b = 0; b < mean_density.size(); b++)
-      outden << b*bin[b].width << setw(15) << mean_density.at(b)/density_profile_samples << endl;
-    outden.close();
-  } 
-  return;
+    vector<double> sample_density;
+
+    if (world.rank() == 0) {
+        ofstream file_for_auto_corr("outfiles/for_auto_corr.dat", ios::app);
+
+        bin_ions(ion, nanoparticle, sample_density, bin);
+        for (unsigned int b = 0; b < mean_density.size(); b++)
+            mean_density.at(b) = mean_density.at(b) + sample_density.at(b);
+        for (unsigned int b = 0; b < sample_density.size(); b++)
+            mean_sq_density.at(b) = mean_sq_density.at(b) + sample_density.at(b) * sample_density.at(b);
+
+        // write a file for post analysis to get auto correlation time		// NOTE this is assuming ions do not cross the interface
+        if (ion[0].posvec.GetMagnitude() > nanoparticle.radius)
+            file_for_auto_corr << cpmdstep - cpmdremote.hiteqm << "\t"
+                               << sample_density[int((nanoparticle.radius + 2) / bin[0].width)] << endl;
+        else
+            file_for_auto_corr << cpmdstep - cpmdremote.hiteqm << "\t"
+                               << sample_density[int((nanoparticle.radius - 2) / bin[0].width)] << endl;
+
+        // write files
+        if (cpmdstep % cpmdremote.writedensity == 0) {
+            char data[200];
+            sprintf(data, "datafiles/_den_%.06d.dat", cpmdstep);
+            ofstream outden;
+            outden.open(data);
+            for (unsigned int b = 0; b < mean_density.size(); b++)
+                outden << b * bin[b].width << setw(15) << mean_density.at(b) / density_profile_samples << endl;
+            outden.close();
+        }
+    }
+    return;
 }
 
 // compute MD trust factor R
-double compute_MD_trust_factor_R(int hiteqm)
-{
-  char filename[200];
-  sprintf(filename, "outfiles/energy.dat");
-  ifstream in(filename, ios::in);
-  if (!in) 
-  {
-    cout << "File could not be opened" << endl; 
-    return 0;
-  }
-  
-  int col1;
-  double col2, col3, col4, col5, col6, col7, col8, col9, col10, col11;
-  vector<double> ext, ke, pe, fake, real;
-  while (in >> col1 >> col2 >> col3 >> col4 >> col5 >> col6 >> col7 >> col8 >> col9 >> col10 >> col11)			
-  {
+double compute_MD_trust_factor_R(int hiteqm) {
+
+    mpi::environment env;
+    mpi::communicator world;
+
+    char filename[200];
+    sprintf(filename, "outfiles/energy.dat");
+    ifstream in(filename, ios::in);
+    if (!in) {
+        if (world.rank() == 0)
+            cout << "File could not be opened" << endl;
+        return 0;
+    }
+
+    int col1;
+    double col2, col3, col4, col5, col6, col7, col8, col9, col10, col11;
+    vector<double> ext, ke, pe, fake, real;
+    while (in >> col1 >> col2 >> col3 >> col4 >> col5 >> col6 >> col7 >> col8 >> col9 >> col10 >> col11) {
 //     if (col1 < hiteqm) continue;
-    ext.push_back(col2);
-    ke.push_back(col3);
-    pe.push_back(col4);
-    fake.push_back(col6);
-    real.push_back(col5);
-  }
+        ext.push_back(col2);
+        ke.push_back(col3);
+        pe.push_back(col4);
+        fake.push_back(col6);
+        real.push_back(col5);
+    }
 //   cout << "Sizes of ext and ke arrays" << setw(10) << ext.size() << setw(10) << ke.size() << endl;
-  
-  double ext_mean = 0;
-  for (unsigned int i = 0; i < ext.size(); i++)
-    ext_mean += ext[i];
-  ext_mean = ext_mean / ext.size();
-  double ke_mean = 0;
-  for (unsigned int i = 0; i < ke.size(); i++)
-    ke_mean += ke[i];
-  ke_mean = ke_mean / ke.size();
- 
+
+    double ext_mean = 0;
+    for (unsigned int i = 0; i < ext.size(); i++)
+        ext_mean += ext[i];
+    ext_mean = ext_mean / ext.size();
+    double ke_mean = 0;
+    for (unsigned int i = 0; i < ke.size(); i++)
+        ke_mean += ke[i];
+    ke_mean = ke_mean / ke.size();
+
 //   cout << "Mean ext and ke" << setw(10) << ext_mean << setw(10) << ke_mean << endl;
-  
-  double ext_sd = 0;
-  for (unsigned int i = 0; i < ext.size(); i++)
-    ext_sd += (ext[i] - ext_mean) * (ext[i] - ext_mean);
-  ext_sd = ext_sd / ext.size();
-  ext_sd = sqrt(ext_sd);
-  
-  double ke_sd = 0;
-  for (unsigned int i = 0; i < ke.size(); i++)
-    ke_sd += (ke[i] - ke_mean) * (ke[i] - ke_mean);
-  ke_sd = ke_sd / ke.size();
-  ke_sd = sqrt(ke_sd);
-  
+
+    double ext_sd = 0;
+    for (unsigned int i = 0; i < ext.size(); i++)
+        ext_sd += (ext[i] - ext_mean) * (ext[i] - ext_mean);
+    ext_sd = ext_sd / ext.size();
+    ext_sd = sqrt(ext_sd);
+
+    double ke_sd = 0;
+    for (unsigned int i = 0; i < ke.size(); i++)
+        ke_sd += (ke[i] - ke_mean) * (ke[i] - ke_mean);
+    ke_sd = ke_sd / ke.size();
+    ke_sd = sqrt(ke_sd);
+
 //   cout << "Standard deviations in ext and ke" << setw(10) << ext_sd << setw(10) << ke_sd << endl;
-  
-  double R = ext_sd / ke_sd;
+
+    double R = ext_sd / ke_sd;
 //   cout << "R" << setw(15) <<  R << endl;
-  
-  ofstream out ("outfiles/R.dat");
-  out << "Sample size " << ext.size() << endl;
-  out << "Sd: ext, kinetic energy and R" << endl;
-  out << ext_sd << setw(15) << ke_sd << setw(15) << R << endl;
-  
-  return R;
+
+    if (world.rank() == 0) {
+        ofstream out("outfiles/R.dat");
+        out << "Sample size " << ext.size() << endl;
+        out << "Sd: ext, kinetic energy and R" << endl;
+        out << ext_sd << setw(15) << ke_sd << setw(15) << R << endl;
+    }
+    return R;
+}
+
+void ProgressBar(double fraction_completed) {
+    mpi::environment env;
+    mpi::communicator world;
+    if (world.rank() == 0) {
+        int val = (int) (fraction_completed * 100);
+        int lpad = (int) (fraction_completed * PBWIDTH);
+        int rpad = PBWIDTH - lpad;
+        printf("\r%3d%% |%.*s%*s|", val, lpad, PBSTR, rpad, "");
+        fflush(stdout);
+    }
 }
 
 /*
