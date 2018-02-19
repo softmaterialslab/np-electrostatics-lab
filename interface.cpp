@@ -6,8 +6,8 @@
 void
 INTERFACE::set_up(double salt_conc_in, double salt_conc_out, double salt_valency_in, double salt_valency_out, int N,
                   double b) {
-    mpi::environment env;
-    mpi::communicator world;
+    
+    
     // useful combinations of different dielectric constants (inside and outside)
     em = 0.5 * (ein + eout);
     ed = (eout - ein) / (4 * pi);
@@ -47,8 +47,8 @@ INTERFACE::set_up(double salt_conc_in, double salt_conc_out, double salt_valency
 
 void
 INTERFACE::put_counterions(vector<PARTICLE> &counterion, int ion_valency, double ion_diameter, vector<PARTICLE> &ion) {
-    mpi::environment env;
-    mpi::communicator world;
+    
+    
     // establish the number of counterions first
     unsigned int total_counterions = int(abs(bare_charge / ion_valency));
     // express diameter in consistent units
@@ -100,8 +100,8 @@ INTERFACE::put_counterions(vector<PARTICLE> &counterion, int ion_valency, double
 
 void INTERFACE::put_saltions_inside(vector<PARTICLE> &saltion_in, int valency, double concentration, double diameter,
                                     vector<PARTICLE> &ion) {
-    mpi::environment env;
-    mpi::communicator world;
+    
+    
     // establish the number of inside salt ions first
     // Note: salt concentration is the concentration of one kind of ions, so for total ions a factor of 2 needs to be multiplied. also some factors appear to be consistent with units.
     double volume_sphere = (4.0 / 3.0) * pi * radius * radius * radius;
@@ -154,8 +154,8 @@ void INTERFACE::put_saltions_inside(vector<PARTICLE> &saltion_in, int valency, d
 
 void INTERFACE::put_saltions_outside(vector<PARTICLE> &saltion_out, int valency, double concentration, double diameter,
                                      vector<PARTICLE> &ion) {
-    mpi::environment env;
-    mpi::communicator world;
+    
+    
     // establish the number of outside salt ions first
     // Note: salt concentration is the concentration of one kind of ions, so for total ions a factor of 2 needs to be multiplied. also some factors appear to be consistent with units.
     double volume_box = (4.0 / 3.0) * pi * (box_radius * box_radius * box_radius - radius * radius * radius);
@@ -212,8 +212,8 @@ void INTERFACE::put_saltions_outside(vector<PARTICLE> &saltion_out, int valency,
 
 // discretize interface
 void INTERFACE::discretize(vector<VERTEX> &s) {
-    mpi::environment env;
-    mpi::communicator world;
+    
+    
 
     char filename[200];
     sprintf(filename, "infiles_a7.5/grid%d.dat",

@@ -10,8 +10,8 @@ ostream &operator<<(ostream &os, VECTOR3D vec) {
 
 // make bins
 void make_bins(vector<BIN> &bin, INTERFACE &nanoparticle, double bin_width) {
-    mpi::environment env;
-    mpi::communicator world;
+    
+    
 
     unsigned int number_of_bins = int(nanoparticle.box_radius / bin_width);
     bin.resize(number_of_bins);
@@ -47,8 +47,8 @@ void bin_ions(vector<PARTICLE> &ion, INTERFACE &nanoparticle, vector<double> &de
 
 // initialize velocities of particles to start simulation
 void initialize_particle_velocities(vector<PARTICLE> &ion, vector<THERMOSTAT> &bath, INTERFACE &nanoparticle) {
-    mpi::environment env;
-    mpi::communicator world;
+    
+    
     if (bath.size() == 1) {
         for (unsigned int i = 0; i < ion.size(); i++)
             ion[i].velvec = VECTOR3D(0, 0, 0);                    // initialized velocities
@@ -79,8 +79,8 @@ void initialize_particle_velocities(vector<PARTICLE> &ion, vector<THERMOSTAT> &b
 
 // initialize velocities of fake degrees to start simulation
 void initialize_fake_velocities(vector<VERTEX> &s, vector<THERMOSTAT> &fake_bath, INTERFACE &nanoparticle) {
-    mpi::environment env;
-    mpi::communicator world;
+    
+    
     if (fake_bath.size() == 1)    // only the dummy is there
     {
         for (unsigned int k = 0; k < s.size(); k++)
@@ -113,8 +113,10 @@ void initialize_fake_velocities(vector<VERTEX> &s, vector<THERMOSTAT> &fake_bath
 // compute additional quantities
 void compute_n_write_useful_data(int cpmdstep, vector<PARTICLE> &ion, vector<VERTEX> &s, vector<THERMOSTAT> &real_bath,
                                  vector<THERMOSTAT> &fake_bath, INTERFACE &nanoparticle) {
-    mpi::environment env;
-    mpi::communicator world;
+
+
+    double potential_energy = energy_functional(s, ion, nanoparticle);
+
     if (world.rank() == 0) {
         ofstream list_tic("outfiles/total_induced_charge.dat", ios::app);
         ofstream list_temperature("outfiles/temperature.dat", ios::app);
@@ -127,7 +129,6 @@ void compute_n_write_useful_data(int cpmdstep, vector<PARTICLE> &ion, vector<VER
         list_tic << cpmdstep << setw(15) << nanoparticle.total_induced_charge(s) << endl;
         double fake_ke = fake_kinetic_energy(s);
         double particle_ke = particle_kinetic_energy(ion);
-        double potential_energy = energy_functional(s, ion, nanoparticle);
         double real_bath_ke = bath_kinetic_energy(real_bath);
         double real_bath_pe = bath_potential_energy(real_bath);
         double fake_bath_ke = bath_kinetic_energy(fake_bath);
@@ -145,8 +146,8 @@ void compute_n_write_useful_data(int cpmdstep, vector<PARTICLE> &ion, vector<VER
 double
 verify_with_FMD(int cpmdstep, vector<VERTEX> s, vector<PARTICLE> &ion, INTERFACE &nanoparticle, CONTROL &fmdremote,
                 CONTROL &cpmdremote) {
-    mpi::environment env;
-    mpi::communicator world;
+    
+    
     vector<VERTEX> exact_s;
     exact_s = s;
     fmdremote.verify = cpmdstep;
@@ -189,8 +190,8 @@ verify_with_FMD(int cpmdstep, vector<VERTEX> s, vector<PARTICLE> &ion, INTERFACE
 
 // make movie
 void make_movie(int num, vector<PARTICLE> &ion, INTERFACE &nanoparticle) {
-    mpi::environment env;
-    mpi::communicator world;
+    
+    
     if (world.rank() == 0) {
         ofstream outdump("outfiles/p.lammpstrj", ios::app);
         outdump << "ITEM: TIMESTEP" << endl;
@@ -220,8 +221,8 @@ void make_movie(int num, vector<PARTICLE> &ion, INTERFACE &nanoparticle) {
 void compute_density_profile(int cpmdstep, double density_profile_samples, vector<double> &mean_density,
                              vector<double> &mean_sq_density, vector<PARTICLE> &ion, INTERFACE &nanoparticle,
                              vector<BIN> &bin, CONTROL &cpmdremote) {
-    mpi::environment env;
-    mpi::communicator world;
+    
+    
 
     vector<double> sample_density;
 
@@ -259,8 +260,8 @@ void compute_density_profile(int cpmdstep, double density_profile_samples, vecto
 // compute MD trust factor R
 double compute_MD_trust_factor_R(int hiteqm) {
 
-    mpi::environment env;
-    mpi::communicator world;
+    
+    
 
     char filename[200];
     sprintf(filename, "outfiles/energy.dat");
@@ -322,8 +323,8 @@ double compute_MD_trust_factor_R(int hiteqm) {
 }
 
 void ProgressBar(double fraction_completed) {
-    mpi::environment env;
-    mpi::communicator world;
+    
+    
     if (world.rank() == 0) {
         int val = (int) (fraction_completed * 100);
         int lpad = (int) (fraction_completed * PBWIDTH);

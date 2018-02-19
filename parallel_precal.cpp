@@ -3,8 +3,8 @@
 #include "precalculations.h"
 
 void precalculate(vector<VERTEX> &s, INTERFACE &nanoparticle) {
-    mpi::environment env;
-    mpi::communicator world;
+    
+    
 
     if (world.rank() == 0)
         cout << "First, precalculate G and H" << endl;

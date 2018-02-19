@@ -32,10 +32,24 @@
 #include <boost/program_options.hpp>
 #include "functions.h"
 #include "precalculations.h"
+#include "mpi_utility.h"
+//MPI boundary parameters
+unsigned int lowerBoundIons;
+unsigned int upperBoundIons;
+unsigned int sizFVecIons;
+unsigned int extraElementsIons;
+unsigned int lowerBoundMesh;
+unsigned int upperBoundMesh;
+unsigned int sizFVecMesh;
+unsigned int extraElementsMesh;
+mpi::environment env;
+mpi::communicator world;
+
 
 using namespace boost::program_options;
 
 int main(int argc, char *argv[]) {
+
     // Electrostatic system variables
     double radius;        // radius of the dielectric sphere
     double ein;            // permittivity of inside medium
@@ -73,8 +87,6 @@ int main(int argc, char *argv[]) {
 
     // Analysis
     vector<BIN> bin;        // bins
-    mpi::environment env;
-    mpi::communicator world;
 
     // Get input values from the user
     options_description desc("Usage:\nrandom_mesh <options>");
@@ -254,6 +266,37 @@ int main(int argc, char *argv[]) {
         s[k].gradGion.resize(ion.size());
     }
 
+    //MPI Boundary calculation for ions
+    unsigned int rangeIons = ion.size() / world.size() + 1.5;
+    lowerBoundIons = world.rank() * rangeIons;
+    upperBoundIons = (world.rank()+1)*rangeIons - 1;
+    extraElementsIons=world.size()*rangeIons-ion.size();
+    sizFVecIons = upperBoundIons-lowerBoundIons+1;
+    if (world.rank() == world.size() - 1){
+        upperBoundIons = ion.size() - 1;
+        sizFVecIons = upperBoundIons-lowerBoundIons+1+extraElementsIons;
+    }
+    if (world.size() == 1) {
+        lowerBoundIons = 0;
+        upperBoundIons = ion.size() - 1;
+    }
+
+    //MPI Boundary calculation for meshPoints
+    unsigned int rangeMesh = s.size() / world.size() + 1.5;
+    lowerBoundMesh = world.rank() * rangeMesh;
+    upperBoundMesh = (world.rank()+1)*rangeMesh - 1;
+    extraElementsMesh=world.size()*rangeMesh-s.size();
+    sizFVecMesh = upperBoundMesh-lowerBoundMesh+1;
+    if (world.rank() == world.size() - 1){
+        upperBoundMesh = s.size() - 1;
+        sizFVecMesh = upperBoundMesh-lowerBoundMesh+1+extraElementsMesh;
+    }
+    if (world.size() == 1) {
+        lowerBoundMesh = 0;
+        upperBoundMesh = s.size() - 1;
+    }
+
+
     // Fictitious molecular dynamics
     if (nanoparticle.POLARIZED)
         fmd(s, ion, nanoparticle, fmdremote, cpmdremote);
@@ -304,7 +347,6 @@ int main(int argc, char *argv[]) {
         // Post simulation analysis (useful for short runs, but performed otherwise too)
         cout << "MD trust factor R (should be < 0.05) is " << compute_MD_trust_factor_R(cpmdremote.hiteqm) << endl;
         //auto_correlation_function();
-
         cout << "Program ends" << endl;
         cout << endl;
     }

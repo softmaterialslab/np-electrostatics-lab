@@ -12,6 +12,7 @@
 #include "thermostat.h"
 #include "forces.h"
 #include "energies.h"
+#include "mpi_utility.h"
 
 #define PBSTR "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
 #define PBWIDTH 60
@@ -79,7 +80,7 @@ inline long double G(vector<VERTEX> &s, unsigned int k, unsigned int l) {
 inline VECTOR3D Grad(VECTOR3D &vec1, VECTOR3D &vec2) {
     long double r = (vec1 - vec2).GetMagnitude();
     long double r3 = r * r * r;
-    return (vec1 - vec2) ^ ((-1.0) / r3);
+    return ((vec1 - vec2) ^ ((-1.0) / r3));
 }
 
 // Gradient of Green's function denoted by H
@@ -102,8 +103,8 @@ inline VECTOR3D GradndotGrad(VECTOR3D &vec1, VECTOR3D &vec2, VECTOR3D &normal) {
 
 // constraint equation
 inline long double constraint(vector<VERTEX> &s, vector<PARTICLE> &ion, INTERFACE &nanoparticle) {
-    return nanoparticle.total_induced_charge(s) -
-           nanoparticle.total_charge_inside(ion) * (1 / nanoparticle.eout - 1 / nanoparticle.ein);
+    return (nanoparticle.total_induced_charge(s) -
+           nanoparticle.total_charge_inside(ion) * (1 / nanoparticle.eout - 1 / nanoparticle.ein));
 }
 
 // SHAKE to ensure constraint is true
@@ -148,9 +149,9 @@ inline void update_chain_xi(unsigned int j, vector<THERMOSTAT> &bath, double dt,
                                                                     exp(-0.25 * dt * bath[j + 1].xi);
 //     bath[j].xi = bath[j].xi * exp(-0.5 * dt * bath[j+1].xi) + 0.5 * dt * (1.0 / bath[j].Q) * (bath[j-1].Q * bath[j-1].xi * bath[j-1].xi - bath[j].dof * kB * bath[j].T) * (exp(-0.5 * dt * bath[j+1].xi) - 1) / (-0.5 * dt * bath[j+1].xi);
     else
-        bath[j].xi = bath[j].xi * exp(-0.5 * dt * bath[j + 1].xi) +
-                     0.5 * dt * (1.0 / bath[j].Q) * (2 * ke - bath[j].dof * kB * bath[j].T) *
-                     exp(-0.25 * dt * bath[j + 1].xi);
+        bath[j].xi = ((bath[j].xi * exp(-0.5 * dt * bath[j + 1].xi)) +
+                (0.5 * dt * (1.0 / bath[j].Q) * (2 * ke - bath[j].dof * kB * bath[j].T) *
+                     exp(-0.25 * dt * bath[j + 1].xi)));
 //     bath[j].xi = bath[j].xi * exp(-0.5 * dt * bath[j+1].xi) + 0.5 * dt * (1.0 / bath[j].Q) * (2*ke - bath[j].dof * kB * bath[j].T) * (exp(-0.5 * dt * bath[j+1].xi) - 1) / (-0.5 * dt * bath[j+1].xi);
     return;
 }
@@ -161,8 +162,8 @@ inline void update_chain_xi(unsigned int j, vector<THERMOSTAT> &bath, double dt,
 inline void
 write_basic_files(int write, int cpmdstep, vector<PARTICLE> &ion, vector<VERTEX> &s, vector<THERMOSTAT> &real_bath,
                   vector<THERMOSTAT> &fake_bath, INTERFACE &nanoparticle) {
-    mpi::environment env;
-    mpi::communicator world;
+    
+    
 
     if (cpmdstep % write != 0)
         return;

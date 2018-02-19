@@ -4,8 +4,8 @@
 #include "functions.h"
 
 void fmd(vector<VERTEX> &s, vector<PARTICLE> &ion, INTERFACE &nanoparticle, CONTROL &fmdremote, CONTROL &cpmdremote) {
-    mpi::environment env;
-    mpi::communicator world;
+    
+    
     // Part I : Initialize
     for (unsigned int k = 0; k < s.size(); k++) {
         s[k].mu = fmdremote.fakemass * s[k].a * s[k].a;                        // Assign mass to the fake degree

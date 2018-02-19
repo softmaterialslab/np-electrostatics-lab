@@ -2,10 +2,10 @@
 
 #include "functions.h"
 
-void cpmd(vector<PARTICLE> &ion, vector<VERTEX> &s, INTERFACE &nanoparticle, vector<THERMOSTAT> &real_bath,
-          vector<THERMOSTAT> &fake_bath, vector<BIN> &bin, CONTROL &fmdremote, CONTROL &cpmdremote) {
-    mpi::environment env;
-    mpi::communicator world;
+void cpmd(vector <PARTICLE> &ion, vector <VERTEX> &s, INTERFACE &nanoparticle, vector <THERMOSTAT> &real_bath,
+          vector <THERMOSTAT> &fake_bath, vector <BIN> &bin, CONTROL &fmdremote, CONTROL &cpmdremote) {
+
+
     // Part I : Initialize and set up
     for (unsigned int k = 0; k < s.size(); k++) {
         s[k].mu = cpmdremote.fakemass * s[k].a * s[k].a;                // fake degree masses assigned
@@ -18,9 +18,10 @@ void cpmd(vector<PARTICLE> &ion, vector<VERTEX> &s, INTERFACE &nanoparticle, vec
     long double sigmadot = dotconstraint(s);                // time derivative of the constraint evaluated
     for (unsigned int k = 0; k < s.size(); k++)
         s[k].vw = s[k].vw - sigmadot / (s[k].a * s.size());        // time derivative of constraint satisfied
-    ;                                // particle positions initialized already, before fmd
+    // particle positions initialized already, before fmd
     initialize_particle_velocities(ion, real_bath, nanoparticle);        // particle velocities initialized
-    for_cpmd_calculate_force(s, ion, nanoparticle);        // forces on particles and fake degrees initialized
+    // forces on particles and fake degrees initialized
+    for_cpmd_calculate_force(s, ion, nanoparticle);
     long double particle_ke = particle_kinetic_energy(ion);        // compute initial particle kinetic energy
     long double fake_ke = fake_kinetic_energy(s);            // compute initial fake kinetic energy
     double potential_energy = energy_functional(s, ion, nanoparticle);    // Compute initial potential energy
@@ -82,11 +83,14 @@ void cpmd(vector<PARTICLE> &ion, vector<VERTEX> &s, INTERFACE &nanoparticle, vec
                             particle_ke);            // update xi for real baths in reverse order
         for (unsigned int j = 0; j < real_bath.size(); j++)
             real_bath[j].update_eta(cpmdremote.timestep);                    // update eta for real baths
+
         expfac_real = exp(-0.5 * cpmdremote.timestep * real_bath[0].xi);
         // Modified velocity Verlet (with thermostat effects) for Real system
         for (unsigned int i = 0; i < ion.size(); i++)
             ion[i].new_update_velocity(cpmdremote.timestep, real_bath[0],
                                        expfac_real);    // update particle velocity half time step
+
+
         for (unsigned int i = 0; i < ion.size(); i++)
             ion[i].update_position(cpmdremote.timestep);                    // update particle position full time step
 
@@ -109,7 +113,9 @@ void cpmd(vector<PARTICLE> &ion, vector<VERTEX> &s, INTERFACE &nanoparticle, vec
                   cpmdremote);                            // shake to ensure constraint is satisfied
         }
 
+        //cout << "Pre num =" << num <<  ", pos: "<< ion[0].posvec << ", force "<<  ion[0].forvec << ", vel "<<  ion[0].velvec << endl;
         for_cpmd_calculate_force(s, ion, nanoparticle);                    // calculate forces on ion and fake degree
+        //cout << "Post num =" << num <<  ", pos: "<< ion[0].posvec << ", force "<<  ion[0].forvec << ", vel "<<  ion[0].velvec << endl;
 
         for (unsigned int i = 0; i < ion.size(); i++)
             ion[i].new_update_velocity(cpmdremote.timestep, real_bath[0],
