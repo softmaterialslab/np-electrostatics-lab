@@ -7,6 +7,23 @@
 
 class THERMOSTAT 
 {
+  private:
+    friend class boost::serialization::access;
+
+    template<class Archive>
+    void serialize(Archive &ar, const unsigned int version)
+    {
+      ar & Q;
+      ar & T;
+      ar & dof;
+      ar & xi;
+      ar & eta;
+      ar & pe;
+      ar & ke;
+      ar & hold;
+
+    }
+
   public:
 
   // members
