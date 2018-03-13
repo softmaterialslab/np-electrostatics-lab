@@ -60,7 +60,9 @@ compute_density_profile(int, double, vector<double> &, vector<double> &, vector<
 double compute_MD_trust_factor_R(int);
 
 // display progress bar (code from the internet)
-void ProgressBar(double);
+void progressBar(double);
+
+// display progress bar (code from the internet)
 
 // post analysis : auto correlation function
 //void auto_correlation_function();

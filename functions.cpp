@@ -322,7 +322,7 @@ double compute_MD_trust_factor_R(int hiteqm) {
     return R;
 }
 
-void ProgressBar(double fraction_completed) {
+void progressBar(double fraction_completed) {
     
     
     if (world.rank() == 0) {

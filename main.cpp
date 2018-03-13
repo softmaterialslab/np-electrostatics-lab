@@ -326,7 +326,7 @@ int main(int argc, char *argv[]) {
     vector<THERMOSTAT> fake_bath;
     if (!nanoparticle.POLARIZED)
         fake_T = 0;
-
+//K is used for thermostat fake_T is k
     if (chain_length_fake == 1)
         fake_bath.push_back(THERMOSTAT(0, fake_T, s.size(), 0.0, 0, 0));
     else {

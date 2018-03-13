@@ -180,7 +180,7 @@ void cpmd(vector <PARTICLE> &ion, vector <VERTEX> &s, INTERFACE &nanoparticle, v
         //percentage output
         if (percentage != percentagePre) {
             double fraction_completed = percentage / 100;
-            ProgressBar(fraction_completed);
+            progressBar(fraction_completed);
             percentagePre = percentage;
         }
     }
