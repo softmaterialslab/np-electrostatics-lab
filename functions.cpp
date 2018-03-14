@@ -260,8 +260,6 @@ void compute_density_profile(int cpmdstep, double density_profile_samples, vecto
 // compute MD trust factor R
 double compute_MD_trust_factor_R(int hiteqm) {
 
-    
-    
 
     char filename[200];
     sprintf(filename, "outfiles/energy.dat");
@@ -308,7 +306,6 @@ double compute_MD_trust_factor_R(int hiteqm) {
     ke_sd = ke_sd / ke.size();
     ke_sd = sqrt(ke_sd);
 
-//   cout << "Standard deviations in ext and ke" << setw(10) << ext_sd << setw(10) << ke_sd << endl;
 
     double R = ext_sd / ke_sd;
 //   cout << "R" << setw(15) <<  R << endl;
@@ -322,7 +319,68 @@ double compute_MD_trust_factor_R(int hiteqm) {
     return R;
 }
 
-void ProgressBar(double fraction_completed) {
+
+// compute MD trust factor R_v
+double compute_MD_trust_factor_R_v(int hiteqm) {
+
+
+    char filename[200];
+    sprintf(filename, "outfiles/energy.dat");
+    ifstream in(filename, ios::in);
+    if (!in) {
+        if (world.rank() == 0)
+            cout << "File could not be opened" << endl;
+        return 0;
+    }
+
+    int col1;
+    double col2, col3, col4, col5, col6, col7, col8, col9, col10, col11;
+    vector<double> ext, fake;
+    while (in >> col1 >> col2 >> col3 >> col4 >> col5 >> col6 >> col7 >> col8 >> col9 >> col10 >> col11) {
+
+        ext.push_back(col2);
+        fake.push_back(col6);
+
+    }
+    double ext_mean = 0;
+    for (unsigned int i = 0; i < ext.size(); i++)
+        ext_mean += ext[i];
+    ext_mean = ext_mean / ext.size();
+    double ke_mean_fake = 0;
+    for (unsigned int i = 0; i < fake.size(); i++)
+        ke_mean_fake += fake[i];
+    ke_mean_fake = ke_mean_fake / fake.size();
+
+//   cout << "Mean ext and ke" << setw(10) << ext_mean << setw(10) << ke_mean << endl;
+
+    double ext_sd = 0;
+    for (unsigned int i = 0; i < ext.size(); i++)
+        ext_sd += (ext[i] - ext_mean) * (ext[i] - ext_mean);
+    ext_sd = ext_sd / ext.size();
+    ext_sd = sqrt(ext_sd);
+
+    double ke_sd_fake = 0;
+    for (unsigned int i = 0; i < fake.size(); i++)
+        ke_sd_fake += (fake[i] - ke_mean_fake) * (fake[i] - ke_mean_fake);
+    ke_sd_fake = ke_sd_fake / fake.size();
+    ke_sd_fake = sqrt(ke_sd_fake);
+
+//   cout << "Standard deviations in ext and ke" << setw(10) << ext_sd << setw(10) << ke_sd << endl;
+
+    double RV = ext_sd / ke_sd_fake;
+//   cout << "RV" << setw(15) <<  RV << endl;
+
+    if (world.rank() == 0) {
+        ofstream out("outfiles/RV.dat");
+        out << "Sample size " << ext.size() << endl;
+        out << "Sd: ext, kinetic energy_fake and RV" << endl;
+        out << ext_sd << setw(15) << ke_sd_fake << setw(15) << RV << endl;
+    }
+    return RV;
+}
+
+
+void progressBar(double fraction_completed) {
     
     
     if (world.rank() == 0) {

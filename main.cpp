@@ -326,7 +326,7 @@ int main(int argc, char *argv[]) {
     vector<THERMOSTAT> fake_bath;
     if (!nanoparticle.POLARIZED)
         fake_T = 0;
-
+//K is used for thermostat fake_T is k
     if (chain_length_fake == 1)
         fake_bath.push_back(THERMOSTAT(0, fake_T, s.size(), 0.0, 0, 0));
     else {
@@ -346,6 +346,7 @@ int main(int argc, char *argv[]) {
     if (world.rank() == 0) {
         // Post simulation analysis (useful for short runs, but performed otherwise too)
         cout << "MD trust factor R (should be < 0.05) is " << compute_MD_trust_factor_R(cpmdremote.hiteqm) << endl;
+        cout << "MD trust factor RV (should be < 0.15) is " << compute_MD_trust_factor_R_v(cpmdremote.hiteqm) << endl;
         //auto_correlation_function();
         cout << "Program ends" << endl;
         cout << endl;
