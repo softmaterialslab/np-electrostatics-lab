@@ -308,7 +308,7 @@ double compute_MD_trust_factor_R(int hiteqm) {
 
 
     double R = ext_sd / ke_sd;
-//   cout << "RV" << setw(15) <<  RV << endl;
+//   cout << "R" << setw(15) <<  R << endl;
 
     if (world.rank() == 0) {
         ofstream out("outfiles/R.dat");
@@ -320,7 +320,7 @@ double compute_MD_trust_factor_R(int hiteqm) {
 }
 
 
-// compute MD trust factor R
+// compute MD trust factor R_v
 double compute_MD_trust_factor_R_v(int hiteqm) {
 
 
@@ -368,7 +368,7 @@ double compute_MD_trust_factor_R_v(int hiteqm) {
 //   cout << "Standard deviations in ext and ke" << setw(10) << ext_sd << setw(10) << ke_sd << endl;
 
     double RV = ext_sd / ke_sd_fake;
-//   cout << "R" << setw(15) <<  R << endl;
+//   cout << "RV" << setw(15) <<  RV << endl;
 
     if (world.rank() == 0) {
         ofstream out("outfiles/RV.dat");
