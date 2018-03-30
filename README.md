@@ -1,11 +1,9 @@
 # np-electrostatics-lab
 
-What does this code do
-* The code enables simulations of ions confined between nanoparticles (NPs) or other material surfaces
-    * Length of confinement is of the order of nanometers
-* Materials represent nanoparticles (NPs) or biomacromolecules
-    * NP surfaces are treated as planar walls due to the large size difference between ions and NPs 
-* Users can extract the ionic structure (density profile) for a wide variety of ionic and environmental parameters
-* Unpolarized surfaces are assumed and standard molecular dynamics is used to propagrate the dynamics of ions
+## Install instructions on BigRed2
+* git clone the project
+* load following modules
+* Go to root directory.
+* type ```make install```
+* Fianlly type ```make cluster-submit```
 
-For further details please refer to the [documentation](https://softmaterialslab.github.io/nanoconfinement-md/) 
