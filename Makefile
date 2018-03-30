@@ -1,42 +1,40 @@
-# This is a makefile.
-# This makes a parallel simulation for different dielectric problem
-# Use option -p in CC for profiling with gprof
-
+#This make file builds the sub folder make files
 PROG = np_electrostatics_lab
-OBJ = main.o interface.o functions.o parallel_precal.o pfmdforces.o pcpmdforces.o penergies.o fmd.o cpmd.o
+JOBSCR = iu_cluster_job_script.pbs
+BIN = bin
+BASE = src
+DATA = data
+SCRIPT = scripts
 
-CC = CC -O3 -g -fopenmp -Wall
-
-LFLAG = -lgsl -lgslcblas -lm -lboost_program_options -lboost_mpi -lboost_serialization
-
-CFLAG = -c
-
-OFLAG = -o
-
-all: $(PROG)
+all:
+	@echo "Starting build of the $(BASE) directory";
+	+$(MAKE) -C $(BASE)
+	@echo "Ending the build of the $(BASE) directory";
+	@echo "installing the $(PROG) into $(BIN) directory"; cp -f $(BASE)/$(PROG) $(BIN)
 
 install: all
-	@echo "Creating needed sub-directories in the current directory"; mkdir outfiles; mkdir datafiles; mkdir verifiles; mkdir computedfiles
-	@echo "Installing $(PROG) into current directory"
+	@echo "Checking and creating needed sub-directories in the $(DATA) directory"
+	if ! [ -d $(DATA) ]; then mkdir $(DATA); fi
+	if ! [ -d $(DATA)/outfiles ]; then mkdir $(DATA)/outfiles; fi
+	if ! [ -d $(DATA)/datafiles ]; then mkdir $(DATA)/datafiles; fi
+	if ! [ -d $(DATA)/verifiles ]; then mkdir $(DATA)/verifiles; fi
+	if ! [ -d $(DATA)/computedfiles ]; then mkdir $(DATA)/computedfiles; fi
+	@echo "Installing $(PROG) into $(DATA) directory"
+	cp -f $(BIN)/$(PROG) $(DATA)
 
-$(PROG) : $(OBJ)
-	$(CC) $(OFLAG) $(PROG) $(OBJ) $(LFLAG)
-
-%.o : %.cpp
-	$(CC) -c $(LFLAG) $< -o $@
-
-main.o: functions.h precalculations.h
-interface.o: interface.h functions.h
-functions.o: functions.h
-parallel_precal.o: precalculations.h
-pfmdforces.o: forces.h
-pcpmdforces.o: forces.h
-penergies.o: energies.h
-fmd.o: functions.h
-cpmd.o: functions.h
+cluster-submit:
+	@echo "Installing jobscript into $(DATA) directory"
+	cp -f $(SCRIPT)/$(JOBSCR) $(DATA)
+	qsub $(DATA)/$(JOBSCR);
 
 clean:
-	rm -f *.o
+	rm -f $(BASE)/*.o
+	rm -f $(BASE)/$(PROG)
+	rm -f $(BIN)/$(PROG)
 
 dataclean:
-	rm -f outfiles/*.dat outfiles/*.xyz  outfiles/*.lammpstrj  datafiles/*.dat verifiles/*.dat computedfiles/*.dat
+	rm -f $(DATA)/$(PROG)
+	rm -f $(DATA)/$(JOBSCR)
+	rm -f $(DATA)/outfiles/*.dat $(DATA)/outfiles/*.xyz  $(DATA)/outfiles/*.lammpstrj  $(DATA)/datafiles/*.dat verifiles/*.dat $(DATA)/computedfiles/*.dat
+
+.PHONY: all clean
