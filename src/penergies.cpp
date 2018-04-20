@@ -146,9 +146,16 @@ double energy_functional(vector<VERTEX> &s, vector<PARTICLE> &ion, INTERFACE &na
                           nanoparticle.ed * nanoparticle.ed * inner5Gather[k]) * s[k].a;
             fwEq_EqEq_EwEq = (ion[i].q / ion[i].epsilon) * insum;
 
+            insum = 0;
+            for (k = 0; k < s.size(); k++)
+                insum += s[k].realQ * ion[i].q * (1.0 / ion[i].epsilon) /
+                ((ion[i].posvec - s[k].posvec).GetMagnitude());
+            /*
             ion_energy[i-lowerBoundIons] = fqq + fwq + fqEq_qEw + fwEq_EqEq_EwEq +
                             nanoparticle.bare_charge * ion[i].q * (1.0 / ion[i].epsilon) /
-                            ((ion[i].posvec - nanoparticle.posvec).GetMagnitude());
+                            ((ion[i].posvec - nanoparticle.posvec).GetMagnitude());*/
+
+            ion_energy[i-lowerBoundIons] = fqq + fwq + fqEq_qEw + fwEq_EqEq_EwEq + insum;
         }
 
 
@@ -174,8 +181,16 @@ double energy_functional(vector<VERTEX> &s, vector<PARTICLE> &ion, INTERFACE &na
                     fqq += 0.5 * ion[i].q * ion[j].q * (1.0 / ion[i].epsilon) /
                            ((ion[i].posvec - ion[j].posvec).GetMagnitude());
                 }
-                ion_energy[i-lowerBoundIons] = fqq + nanoparticle.bare_charge * ion[i].q * (1.0 / ion[i].epsilon) /
-                                      ((ion[i].posvec - nanoparticle.posvec).GetMagnitude());
+
+                double insum = 0;
+                for (int k = 0; k < s.size(); k++)
+                    insum += s[k].realQ * ion[i].q * (1.0 / ion[i].epsilon) /
+                             ((ion[i].posvec - s[k].posvec).GetMagnitude());
+
+                //ion_energy[i-lowerBoundIons] = fqq + nanoparticle.bare_charge * ion[i].q * (1.0 / ion[i].epsilon) /
+                //                      ((ion[i].posvec - nanoparticle.posvec).GetMagnitude());
+
+                ion_energy[i-lowerBoundIons] = fqq + insum;
             }
 
 

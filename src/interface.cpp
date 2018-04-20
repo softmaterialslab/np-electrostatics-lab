@@ -214,7 +214,7 @@ void INTERFACE::put_saltions_outside(vector<PARTICLE> &saltion_out, int valency,
 void INTERFACE::discretize(vector<VERTEX> &s) {
     
     
-
+    //for the disk temp change. : infiles_a10_disk
     char filename[200];
     sprintf(filename, "infiles_a7.5/grid%d.dat",
             number_of_vertices); // change infiles folder if nanoparticle radius changes; for a = 2.67m nm = 7.5 sigma in reduced units, infiles_a7.5 is the folder
@@ -224,10 +224,11 @@ void INTERFACE::discretize(vector<VERTEX> &s) {
             cout << "File could not be opened" << endl;
         exit(1);
     }
+
     unsigned int col1;
     double col2, col3, col4, col5, col6, col7, col8;
     while (in >> col1 >> col2 >> col3 >> col4 >> col5 >> col6 >> col7 >> col8)
-        s.push_back(VERTEX(VECTOR3D(col2, col3, col4), col5, VECTOR3D(col6, col7, col8)));
+        s.push_back(VERTEX(VECTOR3D(col2, col3, col4), col5, VECTOR3D(col6, col7, col8), area_np, bare_charge));
 
     if (world.rank() == 0) {
         ofstream listvertices("outfiles/interface.xyz", ios::out);
