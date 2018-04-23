@@ -6,7 +6,7 @@
 * Then, load the required modules using following command:
 ```module swap PrgEnv-cray PrgEnv-gnu && module load boost/1.65.0 && module load gsl```
 * Next, go to the root directory:
- ```cd np-electrostatic-lab```
+ ```cd np-electrostatics-lab```
 * Then, install the project:
 ```make install```
 * Fianlly, submit the job:
