@@ -1,6 +1,7 @@
 #This make file builds the sub folder make files
 PROG = np_electrostatics_lab
 JOBSCR = iu_cluster_job_script.pbs
+TESTSCR = test.pbs
 BIN = bin
 BASE = src
 DATA = data
@@ -25,7 +26,12 @@ install: all
 cluster-submit:
 	@echo "Installing jobscript into $(DATA) directory"
 	cp -f $(SCRIPT)/$(JOBSCR) $(DATA)
-	qsub $(DATA)/$(JOBSCR);
+	+$(MAKE) -C $(DATA)
+
+cluster-test-submit:
+	@echo "Installing jobscript into $(DATA) directory"
+	cp -f $(SCRIPT)/$(TESTSCR) $(DATA)
+	+$(MAKE) -C $(DATA)
 
 clean:
 	rm -f $(BASE)/*.o
@@ -36,5 +42,7 @@ dataclean:
 	rm -f $(DATA)/$(PROG)
 	rm -f $(DATA)/$(JOBSCR)
 	rm -f $(DATA)/outfiles/*.dat $(DATA)/outfiles/*.xyz  $(DATA)/outfiles/*.lammpstrj  $(DATA)/datafiles/*.dat verifiles/*.dat $(DATA)/computedfiles/*.dat
+	rm -f $(DATA)/*.log
+	rm -f $(DATA)/*.pbs
 
 .PHONY: all clean
