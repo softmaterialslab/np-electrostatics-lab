@@ -211,8 +211,14 @@ for_cpmd_calculate_force(vector<VERTEX> &s, vector<PARTICLE> &ion, INTERFACE &na
         // force calculation for real ions (this was in parallel with the previous for loop)
 #pragma omp parallel for schedule(dynamic) default(shared) private(iloop, l1, h0, h1, h2, h3)
         for (iloop = lowerBoundIons; iloop <= upperBoundIons; iloop++) {
-            h0 = ((Grad(ion[iloop].posvec, nanoparticle.posvec)) ^
-                  ((-1.0) * nanoparticle.bare_charge * ion[iloop].q * 1.0 / ion[iloop].epsilon));
+            //h0 = ((Grad(ion[iloop].posvec, nanoparticle.posvec)) ^
+            //      ((-1.0) * nanoparticle.bare_charge * ion[iloop].q * 1.0 / ion[iloop].epsilon));
+
+            h0 = VECTOR3D(0, 0, 0);
+            for (int k = 0; k < s.size(); k++)
+                h0 = h0 + ((Grad(ion[iloop].posvec, s[k].posvec)) ^
+                           ((-1.0) * s[k].realQ * ion[iloop].q * 1.0 / ion[iloop].epsilon));
+
 
             h1 = VECTOR3D(0, 0, 0);
             for (l1 = 0; l1 < ion.size(); l1++) {
@@ -263,8 +269,16 @@ for_cpmd_calculate_force(vector<VERTEX> &s, vector<PARTICLE> &ion, INTERFACE &na
 
 #pragma omp parallel for schedule(dynamic) default(shared) private(iloop, j1, h0, h1)
         for (iloop = lowerBoundIons; iloop <= upperBoundIons; iloop++) {
-            h0 = ((Grad(ion[iloop].posvec, nanoparticle.posvec)) ^
-                  ((-1.0) * nanoparticle.bare_charge * ion[iloop].q * 1.0 / ion[iloop].epsilon));
+            //h0 = ((Grad(ion[iloop].posvec, nanoparticle.posvec)) ^
+             //     ((-1.0) * nanoparticle.bare_charge * ion[iloop].q * 1.0 / ion[iloop].epsilon));
+
+            h0 = VECTOR3D(0, 0, 0);
+            for (int k = 0; k < s.size(); k++)
+            h0 = h0 + ((Grad(ion[iloop].posvec, s[k].posvec)) ^
+                  ((-1.0) * s[k].realQ * ion[iloop].q * 1.0 / ion[iloop].epsilon));
+
+            //if (iloop == 0)
+            //cout << iloop << " : " << h0.GetMagnitude() << endl;
 
             h1 = VECTOR3D(0, 0, 0);
             for (j1 = 0; j1 < ion.size(); j1++) {

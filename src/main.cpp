@@ -33,6 +33,7 @@
 #include "functions.h"
 #include "precalculations.h"
 #include "mpi_utility.h"
+
 //MPI boundary parameters
 unsigned int lowerBoundIons;
 unsigned int upperBoundIons;
@@ -269,12 +270,12 @@ int main(int argc, char *argv[]) {
     //MPI Boundary calculation for ions
     unsigned int rangeIons = ion.size() / world.size() + 1.5;
     lowerBoundIons = world.rank() * rangeIons;
-    upperBoundIons = (world.rank()+1)*rangeIons - 1;
-    extraElementsIons=world.size()*rangeIons-ion.size();
-    sizFVecIons = upperBoundIons-lowerBoundIons+1;
-    if (world.rank() == world.size() - 1){
+    upperBoundIons = (world.rank() + 1) * rangeIons - 1;
+    extraElementsIons = world.size() * rangeIons - ion.size();
+    sizFVecIons = upperBoundIons - lowerBoundIons + 1;
+    if (world.rank() == world.size() - 1) {
         upperBoundIons = ion.size() - 1;
-        sizFVecIons = upperBoundIons-lowerBoundIons+1+extraElementsIons;
+        sizFVecIons = upperBoundIons - lowerBoundIons + 1 + extraElementsIons;
     }
     if (world.size() == 1) {
         lowerBoundIons = 0;
@@ -284,12 +285,12 @@ int main(int argc, char *argv[]) {
     //MPI Boundary calculation for meshPoints
     unsigned int rangeMesh = s.size() / world.size() + 1.5;
     lowerBoundMesh = world.rank() * rangeMesh;
-    upperBoundMesh = (world.rank()+1)*rangeMesh - 1;
-    extraElementsMesh=world.size()*rangeMesh-s.size();
-    sizFVecMesh = upperBoundMesh-lowerBoundMesh+1;
-    if (world.rank() == world.size() - 1){
+    upperBoundMesh = (world.rank() + 1) * rangeMesh - 1;
+    extraElementsMesh = world.size() * rangeMesh - s.size();
+    sizFVecMesh = upperBoundMesh - lowerBoundMesh + 1;
+    if (world.rank() == world.size() - 1) {
         upperBoundMesh = s.size() - 1;
-        sizFVecMesh = upperBoundMesh-lowerBoundMesh+1+extraElementsMesh;
+        sizFVecMesh = upperBoundMesh - lowerBoundMesh + 1 + extraElementsMesh;
     }
     if (world.size() == 1) {
         lowerBoundMesh = 0;
@@ -346,7 +347,9 @@ int main(int argc, char *argv[]) {
     if (world.rank() == 0) {
         // Post simulation analysis (useful for short runs, but performed otherwise too)
         cout << "MD trust factor R (should be < 0.05) is " << compute_MD_trust_factor_R(cpmdremote.hiteqm) << endl;
-        cout << "MD trust factor RV (should be < 0.15) is " << compute_MD_trust_factor_R_v(cpmdremote.hiteqm) << endl;
+        if (nanoparticle.POLARIZED)
+            cout << "MD trust factor RV (should be < 0.15) is " << compute_MD_trust_factor_R_v(cpmdremote.hiteqm)
+                 << endl;
         //auto_correlation_function();
         cout << "Program ends" << endl;
         cout << endl;
