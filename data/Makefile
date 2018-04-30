@@ -1,7 +1,12 @@
 # This submit a job in bigred2
 
-JOBSCR = test.pbs
+JOBSCR = iu_cluster_job_script.pbs
+TESTSCR = test.pbs
 
-all: 
-	@echo "Launching test job";
+submit: 
+	@echo "Launching the job";
 	qsub $(JOBSCR)
+
+test: 
+	@echo "Launching the test job";
+	qsub $(TESTSCR)
