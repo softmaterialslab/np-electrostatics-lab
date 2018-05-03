@@ -4,7 +4,6 @@ JOBSCR = iu_cluster_job_script.pbs
 TESTSCR = test.pbs
 BIN = bin
 BASE = src
-BIN = data
 SCRIPT = scripts
 
 all:
