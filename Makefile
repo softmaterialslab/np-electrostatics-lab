@@ -4,7 +4,7 @@ JOBSCR = iu_cluster_job_script.pbs
 TESTSCR = test.pbs
 BIN = bin
 BASE = src
-DATA = data
+BIN = data
 SCRIPT = scripts
 
 all:
@@ -21,37 +21,32 @@ endif
 
 install: all
 	create-dirs
-	@echo "Installing $(PROG) into $(DATA) directory"
-	cp -f $(BIN)/$(PROG) $(DATA)
 
 cluster-install: create-dirs
 	make CCF=BigRed2 all
-	@echo "Installing $(PROG) into $(DATA) directory"
-	cp -f $(BIN)/$(PROG) $(DATA)
+
 
 nanoHUB-install: create-dirs
 	make CCF=nanoHUB all
-	@echo "Installing $(PROG) into $(DATA) directory"
-	cp -f $(BIN)/$(PROG) $(DATA)
 
 create-dirs:
-	@echo "Checking and creating needed sub-directories in the $(DATA) directory"
-	if ! [ -d $(DATA) ]; then mkdir $(DATA); fi
-	if ! [ -d $(DATA)/outfiles ]; then mkdir $(DATA)/outfiles; fi
-	if ! [ -d $(DATA)/datafiles ]; then mkdir $(DATA)/datafiles; fi
-	if ! [ -d $(DATA)/verifiles ]; then mkdir $(DATA)/verifiles; fi
-	if ! [ -d $(DATA)/computedfiles ]; then mkdir $(DATA)/computedfiles; fi
+	@echo "Checking and creating needed sub-directories in the $(BIN) directory"
+	if ! [ -d $(BIN) ]; then mkdir $(BIN); fi
+	if ! [ -d $(BIN)/outfiles ]; then mkdir $(BIN)/outfiles; fi
+	if ! [ -d $(BIN)/datafiles ]; then mkdir $(BIN)/datafiles; fi
+	if ! [ -d $(BIN)/verifiles ]; then mkdir $(BIN)/verifiles; fi
+	if ! [ -d $(BIN)/computedfiles ]; then mkdir $(BIN)/computedfiles; fi
 	@echo "Directory creation is over."
 
 cluster-submit:
-	@echo "Installing jobscript into $(DATA) directory"
-	cp -f $(SCRIPT)/$(JOBSCR) $(DATA)
-	+$(MAKE) -C $(DATA) submit
+	@echo "Installing jobscript into $(BIN) directory"
+	cp -f $(SCRIPT)/$(JOBSCR) $(BIN)
+	+$(MAKE) -C $(BIN) submit
 
 cluster-test-submit:
-	@echo "Installing test jobscript into $(DATA) directory"
-	cp -f $(SCRIPT)/$(TESTSCR) $(DATA)
-	+$(MAKE) -C $(DATA) test
+	@echo "Installing test jobscript into $(BIN) directory"
+	cp -f $(SCRIPT)/$(TESTSCR) $(BIN)
+	+$(MAKE) -C $(BIN) test
 
 clean:
 	rm -f $(BASE)/*.o
@@ -59,10 +54,8 @@ clean:
 	rm -f $(BIN)/$(PROG)
 
 dataclean:
-	rm -f $(DATA)/$(PROG)
-	rm -f $(DATA)/$(JOBSCR)
-	rm -f $(DATA)/outfiles/*.dat $(DATA)/outfiles/*.xyz  $(DATA)/outfiles/*.lammpstrj  $(DATA)/datafiles/*.dat verifiles/*.dat $(DATA)/computedfiles/*.dat
-	rm -f $(DATA)/*.log
-	rm -f $(DATA)/*.pbs
+	rm -f $(BIN)/outfiles/*.dat $(BIN)/outfiles/*.xyz  $(BIN)/outfiles/*.lammpstrj  $(BIN)/datafiles/*.dat verifiles/*.dat $(BIN)/computedfiles/*.dat
+	rm -f $(BIN)/*.log
+	rm -f $(BIN)/*.pbs
 
 .PHONY: all clean
