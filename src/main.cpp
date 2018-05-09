@@ -137,7 +137,8 @@ int main(int argc, char *argv[]) {
             ("cpmd_writedata,U", value<int>(&cpmdremote.writedata)->default_value(1000), "write data files")
             ("cpmd_extra_compute,X", value<int>(&cpmdremote.extra_compute)->default_value(1000),
              "compute additional (cpmd)")
-            ("cpmd_writedensity,W", value<int>(&cpmdremote.writedensity)->default_value(10000), "write density files");
+            ("cpmd_writedensity,W", value<int>(&cpmdremote.writedensity)->default_value(10000), "write density files")
+            ("verbose,I", value<bool>(&cpmdremote.verbose)->default_value(true),"verbose true: provides detailed output");
 
     variables_map vm;
     store(parse_command_line(argc, argv, desc), vm);
