@@ -175,14 +175,32 @@ void cpmd(vector <PARTICLE> &ion, vector <VERTEX> &s, INTERFACE &nanoparticle, v
             compute_density_profile(num, density_profile_samples, mean_density, mean_sq_density, ion, nanoparticle, bin,
                                     cpmdremote);
         }
-        //percentage calculation
-        percentage = roundf(num / (double) cpmdremote.steps * 100 * 10) / 10;
-        //percentage output
-        if (percentage != percentagePre) {
-            double fraction_completed = percentage / 100;
-            progressBar(fraction_completed);
-            percentagePre = percentage;
+
+        if (world.rank() == 0)
+        {
+            //percentage calculation
+            if(!cpmdremote.verbose)
+                percentage=roundf(num/(double)cpmdremote.steps*100);
+            else
+                percentage=roundf(num/(double)cpmdremote.steps*100 * 10) / 10;
+            //percentage output
+            if(percentage!=percentagePre)
+            {
+                if(!cpmdremote.verbose)
+                {
+                    int progressBarVal=(int) (percentage+0.5);
+                    printf("=PROGRESS=>%d\n",progressBarVal);
+                }else
+                {
+                    double fraction_completed = percentage/100;
+                    progressBar(fraction_completed);
+                }
+                percentagePre=percentage;
+
+            }
         }
+
+
     }
 
     // Part III : Analysis

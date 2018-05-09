@@ -11,6 +11,7 @@ class CONTROL
     template<class Archive>
     void serialize(Archive &ar, const unsigned int version)
     {
+        ar & verbose;
         ar & fakemass;
         ar & timestep;
         ar & steps;
@@ -27,6 +28,7 @@ class CONTROL
     }
 
   public:
+    bool verbose;   //more control for nanoHUB deployment
     double fakemass;		// fictitious mass used in molecular dynamics
     double timestep;		// timestep used in molecular dynamics
     int steps;			// number of steps in molecular dynamics
