@@ -3,7 +3,7 @@
 # Use option -p in CC for profiling with gprof
 
 # nanoHUB flags. 
-nanoHUBCC = mpicxx -O3 -g -Wall -fopenmp
+nanoHUBCC = mpicxx -O3 -g -Wall -fopenmp -std=c++11 -Wunused-variable -Wunknown-pragmas
 nanoHUBLFLAG = -lgsl -lgslcblas -lm -L${BOOST_LIBDIR} -lboost_program_options -lboost_mpi -lboost_serialization
 nanoHUBCFLAG = -I${BOOST_INCDIR}
 nanoHUBOFLAG = -o
