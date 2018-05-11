@@ -111,7 +111,7 @@ void initialize_fake_velocities(vector<VERTEX> &s, vector<THERMOSTAT> &fake_bath
 
 // compute additional quantities
 void compute_n_write_useful_data(int cpmdstep, vector<PARTICLE> &ion, vector<VERTEX> &s, vector<THERMOSTAT> &real_bath,
-                                 vector<THERMOSTAT> &fake_bath, INTERFACE &nanoparticle) {
+                                 vector<THERMOSTAT> &fake_bath, INTERFACE &nanoparticle, CONTROL &cpmdremote) {
 
 
     double potential_energy = energy_functional(s, ion, nanoparticle);
@@ -138,6 +138,10 @@ void compute_n_write_useful_data(int cpmdstep, vector<PARTICLE> &ion, vector<VER
                     << setw(15) << particle_ke + potential_energy + real_bath_ke + real_bath_pe << setw(15) << fake_ke
                     << setw(15) << fake_ke + fake_bath_ke + fake_bath_pe << setw(15) << real_bath_ke << setw(15)
                     << real_bath_pe << setw(15) << fake_bath_ke << setw(15) << fake_bath_pe << endl;
+
+        if (!cpmdremote.verbose)
+            cout_enery_data();
+
     }
 }
 
@@ -268,6 +272,33 @@ void compute_density_profile(int cpmdstep, double density_profile_samples, vecto
     }
     return;
 }
+
+void cout_enery_data() {
+
+    char filename[200];
+    sprintf(filename, "outfiles/energy.dat");
+    ifstream in(filename, ios::in);
+    if (!in) {
+        if (world.rank() == 0)
+            cout << "File could not be opened" << endl;
+        return;
+    }
+    if (world.rank() == 0) {
+
+        std::string energy_pr_str = "\n####_Enery_Profile_Wrapper_####\n";
+
+        int col1;
+        double col2, col3, col4, col5, col6, col7, col8, col9, col10, col11;
+        while (in >> col1 >> col2 >> col3 >> col4 >> col5 >> col6 >> col7 >> col8 >> col9 >> col10 >> col11) {
+            energy_pr_str =
+                    energy_pr_str + std::to_string(col1) + "," + std::to_string(col2) + "," + std::to_string(col3) +
+                    "," + std::to_string(col4) + "," + std::to_string(col6) + "\n";
+        }
+        energy_pr_str = energy_pr_str + "####_Enery_Profile_Wrapper_Over_####";
+        cout << energy_pr_str << "\n";
+    }
+}
+
 
 // compute MD trust factor R
 double compute_MD_trust_factor_R(int hiteqm) {

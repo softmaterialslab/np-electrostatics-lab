@@ -43,7 +43,7 @@ void cpmd(vector<PARTICLE> &, vector<VERTEX> &, INTERFACE &, vector<THERMOSTAT> 
 
 // compute and write useful data in cpmd
 void compute_n_write_useful_data(int, vector<PARTICLE> &, vector<VERTEX> &, vector<THERMOSTAT> &, vector<THERMOSTAT> &,
-                                 INTERFACE &);
+                                 INTERFACE &, CONTROL &);
 
 // verify with F M D
 double verify_with_FMD(int, vector<VERTEX>, vector<PARTICLE> &, INTERFACE &, CONTROL &, CONTROL &);
@@ -64,6 +64,8 @@ double compute_MD_trust_factor_R_v(int);
 
 // display progress bar (code from the internet)
 void progressBar(double);
+
+void cout_enery_data();
 
 // display progress bar (code from the internet)
 
