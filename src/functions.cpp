@@ -263,7 +263,7 @@ void compute_density_profile(int cpmdstep, double density_profile_samples, vecto
             desnity_pr_str = desnity_pr_str + "####_Density_Profile_Wrapper_Over_####";
             if (!cpmdremote.verbose) {
                 cout << desnity_pr_str << "\n";
-                cout_enery_data();
+                cout_energy_data();
             }
         }
 
@@ -272,7 +272,7 @@ void compute_density_profile(int cpmdstep, double density_profile_samples, vecto
     return;
 }
 
-void cout_enery_data() {
+void cout_energy_data() {
 
     char filename[200];
     sprintf(filename, "outfiles/energy.dat");

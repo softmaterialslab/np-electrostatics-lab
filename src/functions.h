@@ -65,7 +65,7 @@ double compute_MD_trust_factor_R_v(int);
 // display progress bar (code from the internet)
 void progressBar(double);
 
-void cout_enery_data();
+void cout_energy_data();
 
 // display progress bar (code from the internet)
 
