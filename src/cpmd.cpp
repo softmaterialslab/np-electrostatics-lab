@@ -152,7 +152,7 @@ void cpmd(vector <PARTICLE> &ion, vector <VERTEX> &s, INTERFACE &nanoparticle, v
         // extra computations
         if (num % cpmdremote.extra_compute == 0) {
             energy_samples++;
-            compute_n_write_useful_data(num, ion, s, real_bath, fake_bath, nanoparticle);
+            compute_n_write_useful_data(num, ion, s, real_bath, fake_bath, nanoparticle,cpmdremote);
             // write basic files
             write_basic_files(cpmdremote.writedata, num, ion, s, real_bath, fake_bath, nanoparticle);
         }

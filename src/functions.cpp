@@ -10,8 +10,7 @@ ostream &operator<<(ostream &os, VECTOR3D vec) {
 
 // make bins
 void make_bins(vector<BIN> &bin, INTERFACE &nanoparticle, double bin_width) {
-    
-    
+
 
     unsigned int number_of_bins = int(nanoparticle.box_radius / bin_width);
     bin.resize(number_of_bins);
@@ -47,8 +46,8 @@ void bin_ions(vector<PARTICLE> &ion, INTERFACE &nanoparticle, vector<double> &de
 
 // initialize velocities of particles to start simulation
 void initialize_particle_velocities(vector<PARTICLE> &ion, vector<THERMOSTAT> &bath, INTERFACE &nanoparticle) {
-    
-    
+
+
     if (bath.size() == 1) {
         for (unsigned int i = 0; i < ion.size(); i++)
             ion[i].velvec = VECTOR3D(0, 0, 0);                    // initialized velocities
@@ -79,8 +78,8 @@ void initialize_particle_velocities(vector<PARTICLE> &ion, vector<THERMOSTAT> &b
 
 // initialize velocities of fake degrees to start simulation
 void initialize_fake_velocities(vector<VERTEX> &s, vector<THERMOSTAT> &fake_bath, INTERFACE &nanoparticle) {
-    
-    
+
+
     if (fake_bath.size() == 1)    // only the dummy is there
     {
         for (unsigned int k = 0; k < s.size(); k++)
@@ -112,7 +111,7 @@ void initialize_fake_velocities(vector<VERTEX> &s, vector<THERMOSTAT> &fake_bath
 
 // compute additional quantities
 void compute_n_write_useful_data(int cpmdstep, vector<PARTICLE> &ion, vector<VERTEX> &s, vector<THERMOSTAT> &real_bath,
-                                 vector<THERMOSTAT> &fake_bath, INTERFACE &nanoparticle) {
+                                 vector<THERMOSTAT> &fake_bath, INTERFACE &nanoparticle, CONTROL &cpmdremote) {
 
 
     double potential_energy = energy_functional(s, ion, nanoparticle);
@@ -139,6 +138,7 @@ void compute_n_write_useful_data(int cpmdstep, vector<PARTICLE> &ion, vector<VER
                     << setw(15) << particle_ke + potential_energy + real_bath_ke + real_bath_pe << setw(15) << fake_ke
                     << setw(15) << fake_ke + fake_bath_ke + fake_bath_pe << setw(15) << real_bath_ke << setw(15)
                     << real_bath_pe << setw(15) << fake_bath_ke << setw(15) << fake_bath_pe << endl;
+
     }
 }
 
@@ -146,8 +146,8 @@ void compute_n_write_useful_data(int cpmdstep, vector<PARTICLE> &ion, vector<VER
 double
 verify_with_FMD(int cpmdstep, vector<VERTEX> s, vector<PARTICLE> &ion, INTERFACE &nanoparticle, CONTROL &fmdremote,
                 CONTROL &cpmdremote) {
-    
-    
+
+
     vector<VERTEX> exact_s;
     exact_s = s;
     fmdremote.verify = cpmdstep;
@@ -190,8 +190,8 @@ verify_with_FMD(int cpmdstep, vector<VERTEX> s, vector<PARTICLE> &ion, INTERFACE
 
 // make movie
 void make_movie(int num, vector<PARTICLE> &ion, INTERFACE &nanoparticle) {
-    
-    
+
+
     if (world.rank() == 0) {
         ofstream outdump("outfiles/p.lammpstrj", ios::app);
         outdump << "ITEM: TIMESTEP" << endl;
@@ -221,10 +221,10 @@ void make_movie(int num, vector<PARTICLE> &ion, INTERFACE &nanoparticle) {
 void compute_density_profile(int cpmdstep, double density_profile_samples, vector<double> &mean_density,
                              vector<double> &mean_sq_density, vector<PARTICLE> &ion, INTERFACE &nanoparticle,
                              vector<BIN> &bin, CONTROL &cpmdremote) {
-    
-    
+
 
     vector<double> sample_density;
+
 
     if (world.rank() == 0) {
         ofstream file_for_auto_corr("outfiles/for_auto_corr.dat", ios::app);
@@ -245,17 +245,59 @@ void compute_density_profile(int cpmdstep, double density_profile_samples, vecto
 
         // write files
         if (cpmdstep % cpmdremote.writedensity == 0) {
+
+            std::string desnity_pr_str = "\n####_Density_Profile_Wrapper_####";
+            desnity_pr_str = desnity_pr_str + "#Stepsize:" + std::to_string(cpmdstep) + "\n";
+
             char data[200];
             sprintf(data, "datafiles/_den_%.06d.dat", cpmdstep);
             ofstream outden;
             outden.open(data);
-            for (unsigned int b = 0; b < mean_density.size(); b++)
+            for (unsigned int b = 0; b < mean_density.size(); b++) {
                 outden << b * bin[b].width << setw(15) << mean_density.at(b) / density_profile_samples << endl;
+                if (!cpmdremote.verbose)
+                    desnity_pr_str = desnity_pr_str + std::to_string(b * bin[b].width) + "," +
+                                     std::to_string(mean_density.at(b) / density_profile_samples) + "\n";
+            }
             outden.close();
+            desnity_pr_str = desnity_pr_str + "####_Density_Profile_Wrapper_Over_####";
+            if (!cpmdremote.verbose) {
+                cout << desnity_pr_str << "\n";
+                cout_enery_data();
+            }
         }
+
+
     }
     return;
 }
+
+void cout_enery_data() {
+
+    char filename[200];
+    sprintf(filename, "outfiles/energy.dat");
+    ifstream in(filename, ios::in);
+    if (!in) {
+        if (world.rank() == 0)
+            cout << "File could not be opened" << endl;
+        return;
+    }
+    if (world.rank() == 0) {
+
+        std::string energy_pr_str = "\n####_Enery_Profile_Wrapper_####\n";
+
+        int col1;
+        double col2, col3, col4, col5, col6, col7, col8, col9, col10, col11;
+        while (in >> col1 >> col2 >> col3 >> col4 >> col5 >> col6 >> col7 >> col8 >> col9 >> col10 >> col11) {
+            energy_pr_str =
+                    energy_pr_str + std::to_string(col1) + "," + std::to_string(col2) + "," + std::to_string(col3) +
+                    "," + std::to_string(col4) + "," + std::to_string(col6) + "\n";
+        }
+        energy_pr_str = energy_pr_str + "####_Enery_Profile_Wrapper_Over_####";
+        cout << energy_pr_str << "\n";
+    }
+}
+
 
 // compute MD trust factor R
 double compute_MD_trust_factor_R(int hiteqm) {
@@ -381,8 +423,8 @@ double compute_MD_trust_factor_R_v(int hiteqm) {
 
 
 void progressBar(double fraction_completed) {
-    
-    
+
+
     if (world.rank() == 0) {
         int val = (int) (fraction_completed * 100);
         int lpad = (int) (fraction_completed * PBWIDTH);
