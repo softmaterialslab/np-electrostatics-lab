@@ -139,9 +139,6 @@ void compute_n_write_useful_data(int cpmdstep, vector<PARTICLE> &ion, vector<VER
                     << setw(15) << fake_ke + fake_bath_ke + fake_bath_pe << setw(15) << real_bath_ke << setw(15)
                     << real_bath_pe << setw(15) << fake_bath_ke << setw(15) << fake_bath_pe << endl;
 
-        if (!cpmdremote.verbose)
-            cout_enery_data();
-
     }
 }
 
@@ -264,8 +261,10 @@ void compute_density_profile(int cpmdstep, double density_profile_samples, vecto
             }
             outden.close();
             desnity_pr_str = desnity_pr_str + "####_Density_Profile_Wrapper_Over_####";
-            if (!cpmdremote.verbose)
+            if (!cpmdremote.verbose) {
                 cout << desnity_pr_str << "\n";
+                cout_enery_data();
+            }
         }
 
 
