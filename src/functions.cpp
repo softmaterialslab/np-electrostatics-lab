@@ -189,10 +189,12 @@ verify_with_FMD(int cpmdstep, vector<VERTEX> s, vector<PARTICLE> &ion, INTERFACE
 }
 
 // make movie
-void make_movie(int num, vector<PARTICLE> &ion, INTERFACE &nanoparticle) {
-
+void make_movie(int num, vector<PARTICLE> &ion, INTERFACE &nanoparticle, CONTROL &cpmdremote) {
 
     if (world.rank() == 0) {
+
+        std::string ions_pos_str = "\n####_Ions_Position_Wrapper_####\n";
+
         ofstream outdump("outfiles/p.lammpstrj", ios::app);
         outdump << "ITEM: TIMESTEP" << endl;
         outdump << num - 1 << endl;
@@ -211,8 +213,16 @@ void make_movie(int num, vector<PARTICLE> &ion, INTERFACE &nanoparticle) {
                 type = "-1";
             outdump << setw(6) << i << "\t" << type << "\t" << setw(8) << ion[i].posvec.x << "\t" << setw(8)
                     << ion[i].posvec.y << "\t" << setw(8) << ion[i].posvec.z << endl;
+            if (!cpmdremote.verbose)
+                ions_pos_str =
+                        ions_pos_str + std::to_string(i) + "," + type + "," + std::to_string(ion[i].posvec.x) +
+                        "," + std::to_string(ion[i].posvec.y) + "," + std::to_string(ion[i].posvec.z) + "\n";
         }
         outdump.close();
+        ions_pos_str = ions_pos_str + "####_Ions_Position_Wrapper__Over_####";
+        if (!cpmdremote.verbose)
+            cout << ions_pos_str << "\n";
+
     }
     return;
 }
@@ -284,7 +294,7 @@ void cout_energy_data() {
     }
     if (world.rank() == 0) {
 
-        std::string energy_pr_str = "\n####_Enery_Profile_Wrapper_####\n";
+        std::string energy_pr_str = "\n####_Energy_Profile_Wrapper_####\n";
 
         int col1;
         double col2, col3, col4, col5, col6, col7, col8, col9, col10, col11;
@@ -293,7 +303,7 @@ void cout_energy_data() {
                     energy_pr_str + std::to_string(col1) + "," + std::to_string(col2) + "," + std::to_string(col3) +
                     "," + std::to_string(col4) + "," + std::to_string(col6) + "\n";
         }
-        energy_pr_str = energy_pr_str + "####_Enery_Profile_Wrapper_Over_####";
+        energy_pr_str = energy_pr_str + "####_Energy_Profile_Wrapper_Over_####";
         cout << energy_pr_str << "\n";
     }
 }

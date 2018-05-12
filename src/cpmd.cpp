@@ -167,7 +167,7 @@ void cpmd(vector <PARTICLE> &ion, vector <VERTEX> &s, INTERFACE &nanoparticle, v
 
         // make a movie
         if (num >= moviestart && num % moviefreq == 0)
-            make_movie(num, ion, nanoparticle);
+            make_movie(num, ion, nanoparticle,cpmdremote);
 
         // compute density profile
         if (num >= cpmdremote.hiteqm && (num % cpmdremote.freq == 0)) {
