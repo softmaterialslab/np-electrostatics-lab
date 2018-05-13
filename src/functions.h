@@ -49,7 +49,7 @@ void compute_n_write_useful_data(int, vector<PARTICLE> &, vector<VERTEX> &, vect
 double verify_with_FMD(int, vector<VERTEX>, vector<PARTICLE> &, INTERFACE &, CONTROL &, CONTROL &);
 
 // make movie
-void make_movie(int num, vector<PARTICLE> &ion, INTERFACE &nanoparticle);
+void make_movie(int num, vector<PARTICLE> &ion, INTERFACE &nanoparticle, CONTROL &);
 
 // compute density profile
 void
