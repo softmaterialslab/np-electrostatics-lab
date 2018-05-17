@@ -230,11 +230,11 @@ def generateDataSet(e=2,E=78.5,nanoparticle_charge=-60,counterion_valency=1, tot
     
     res= res[:,0:m]
 
-    print("Finding best parameters with NN")
-    print("selected index : " + str(res.argmax(axis=1)))
-    print("confidence score : " + str(res.max(axis=1)))
-    print("Best para set : ")
-    print(data[res.argmax(axis=1),:].flatten())
+    #print("Finding best parameters with NN")
+    #print("selected index : " + str(res.argmax(axis=1)))
+    #print("confidence score : " + str(res.max(axis=1)))
+    #print("Best para set : ")
+    #print(data[res.argmax(axis=1),:].flatten())
     
     '''
     print("worst para set")
