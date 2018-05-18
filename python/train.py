@@ -84,7 +84,7 @@ def getResult_Binary(Z):
     
     global YHatR
      
-    data = np.load("ml_data/T_weights.npz")
+    data = np.load("bin/ml_data/T_weights.npz")
     W1 = data['W1']
     W2 = data['W2']
     
@@ -111,7 +111,7 @@ def getResult(Z):
     
     global YHat
      
-    data = np.load("ml_data/T_weights.npz")
+    data = np.load("bin/ml_data/T_weights.npz")
     W1 = data['W1']
     W2 = data['W2']
     
@@ -136,7 +136,7 @@ def getResult(Z):
 
 #Train multilayerNeuralNetwork
 def getTrainDataSet(): 
-    rawdata = pd.read_csv('ml_data/data.csv', names=['e','E','nanoparticle_charge','counterion_valency','total_gridpoints','cpmd_fake_mass','fake_temperature','R','R_v','FD','output','Time'])
+    rawdata = pd.read_csv('bin/ml_data/data.csv', names=['e','E','nanoparticle_charge','counterion_valency','total_gridpoints','cpmd_fake_mass','fake_temperature','R','R_v','FD','output','Time'])
     rawdata=rawdata.drop(rawdata.index[0])
     rawdata = shuffle(rawdata)
     traing_data_raw=rawdata.drop(['R','R_v','FD','output','Time'], axis=1).as_matrix().astype('float64')
@@ -148,7 +148,7 @@ def getTrainDataSet():
 
 #Train multilayerNeuralNetwork
 def trainNN(middlelayerSize=8,learningRate=0.0001,iterations=30000): 
-    rawdata = pd.read_csv('ml_data/data.csv', names=['e','E','nanoparticle_charge','counterion_valency','total_gridpoints','cpmd_fake_mass','fake_temperature','R','R_v','FD','output','Time'])
+    rawdata = pd.read_csv('bin/ml_data/data.csv', names=['e','E','nanoparticle_charge','counterion_valency','total_gridpoints','cpmd_fake_mass','fake_temperature','R','R_v','FD','output','Time'])
     rawdata=rawdata.drop(rawdata.index[0])
     rawdata = shuffle(rawdata)
     traing_data_raw = rawdata.drop(['R','R_v','FD','output','Time'], axis=1).as_matrix().astype('float64')
@@ -166,7 +166,7 @@ def trainNN(middlelayerSize=8,learningRate=0.0001,iterations=30000):
     
 #predict accuaracy for test data file
 def predict():    
-    rawdata = pd.read_csv('ml_data/test_data.csv', names=['e','E','nanoparticle_charge','counterion_valency','total_gridpoints','cpmd_fake_mass','fake_temperature','R','R_v','FD','output','Time'])
+    rawdata = pd.read_csv('bin/ml_data/test_data.csv', names=['e','E','nanoparticle_charge','counterion_valency','total_gridpoints','cpmd_fake_mass','fake_temperature','R','R_v','FD','output','Time'])
     rawdata=rawdata.drop(rawdata.index[0])
 
     #print(rawdata)
