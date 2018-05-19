@@ -6,9 +6,8 @@ Created on Fri Feb 23 17:14:28 2018
 """
 
 import train as nn
-#from pyspark import SparkContext
 #traing with train data
-#nn.trainNN(8,0.0001,100000)
+#nn.trainNN(8,0.0001,30000)
 #Prediction with test data
 #nn.predict()
 
@@ -44,5 +43,6 @@ nn.generateDataSet(e=2,E=30,nanoparticle_charge=-20,counterion_valency=3, total_
 
 '''
 
-paralist = nn.generateDataSet(e=160,E=78.5,nanoparticle_charge=-60,counterion_valency=1, total_gridpoints=752)
-print(paralist[0])
+paralist = nn.generateDataSet(e=2,E=78.5,nanoparticle_charge=-30,counterion_valency=3, total_gridpoints=752)
+print(paralist[5])
+print(paralist[6])
