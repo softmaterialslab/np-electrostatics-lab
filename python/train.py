@@ -229,7 +229,7 @@ def generateDataSet(e=2,E=78.5,nanoparticle_charge=-60,counterion_valency=1, tot
     res=getResult(data_normalized.T)
     
     res= res[:,0:m]
-	'''
+    '''
     print("Finding best parameters with NN")
     print("selected index : " + str(res.argmax(axis=1)))
     print("confidence score : " + str(res.max(axis=1)))
