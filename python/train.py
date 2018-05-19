@@ -197,12 +197,12 @@ def predict():
 #Generate dataset for a given 'e','E','nanoparticle_charge','counterion_valency','total_gridpoints' values
 def generateDataSet(e=2,E=78.5,nanoparticle_charge=-60,counterion_valency=1, total_gridpoints=752):
     
-    cpmd_fake_mass=0
+    cpmd_fake_mass=3
     cpmd_fake_mass_step=1
-    mass_size=100
+    mass_size=12
     fake_temperature=0.000
     fake_temperature_step=0.001
-    tempsize=100
+    tempsize=10
     
     data = np.empty((0,7), float)
     
@@ -219,7 +219,7 @@ def generateDataSet(e=2,E=78.5,nanoparticle_charge=-60,counterion_valency=1, tot
     m = np.size(data,0)
     x = getTrainDataSet()[0]    
     allData = np.concatenate((data, x), axis=0) 
-    
+    #allData = data
     #np.random.shuffle(data)
     
     data_normalized = allData / allData.max(axis=0)
@@ -229,14 +229,14 @@ def generateDataSet(e=2,E=78.5,nanoparticle_charge=-60,counterion_valency=1, tot
     res=getResult(data_normalized.T)
     
     res= res[:,0:m]
-
-    #print("Finding best parameters with NN")
-    #print("selected index : " + str(res.argmax(axis=1)))
-    #print("confidence score : " + str(res.max(axis=1)))
-    #print("Best para set : ")
-    #print(data[res.argmax(axis=1),:].flatten())
+	'''
+    print("Finding best parameters with NN")
+    print("selected index : " + str(res.argmax(axis=1)))
+    print("confidence score : " + str(res.max(axis=1)))
+    print("Best para set : ")
+    print(data[res.argmax(axis=1),:].flatten())
     
-    '''
+    
     print("worst para set")
     print(res.argmin(axis=1))
     print(res.min(axis=1))
