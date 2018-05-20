@@ -274,7 +274,7 @@ void compute_density_profile(int cpmdstep, double density_profile_samples, vecto
             outden.close();
             desnity_pr_str = desnity_pr_str + "####_Density_Profile_Wrapper_Over_####";
             if (!cpmdremote.verbose) {
-                cout << desnity_pr_str << "\n";
+                //cout << desnity_pr_str << "\n";
             }
         }
 
