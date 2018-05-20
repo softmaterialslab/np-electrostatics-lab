@@ -221,7 +221,7 @@ void make_movie(int num, vector<PARTICLE> &ion, INTERFACE &nanoparticle, CONTROL
         outdump.close();
         ions_pos_str = ions_pos_str + "####_Ions_Position_Wrapper__Over_####";
         if (!cpmdremote.verbose){
-			cout << ions_pos_str << "\n";
+			//cout << ions_pos_str << "\n";
 			cout_energy_data();
 		}
 
