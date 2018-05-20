@@ -222,7 +222,8 @@ void make_movie(int num, vector<PARTICLE> &ion, INTERFACE &nanoparticle, CONTROL
         ions_pos_str = ions_pos_str + "####_Ions_Position_Wrapper__Over_####";
         if (!cpmdremote.verbose){
 			//cout << ions_pos_str << "\n";
-			cout_energy_data();
+			ions_pos_str = "";
+			
 		}
 
     }
@@ -275,6 +276,7 @@ void compute_density_profile(int cpmdstep, double density_profile_samples, vecto
             desnity_pr_str = desnity_pr_str + "####_Density_Profile_Wrapper_Over_####";
             if (!cpmdremote.verbose) {
                 //cout << desnity_pr_str << "\n";
+				cout_energy_data();
             }
         }
 
