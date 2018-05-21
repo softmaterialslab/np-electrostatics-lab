@@ -220,8 +220,11 @@ void make_movie(int num, vector<PARTICLE> &ion, INTERFACE &nanoparticle, CONTROL
         }
         outdump.close();
         ions_pos_str = ions_pos_str + "####_Ions_Position_Wrapper__Over_####";
-        if (!cpmdremote.verbose)
-            cout << ions_pos_str << "\n";
+        if (!cpmdremote.verbose){
+			//cout << ions_pos_str << "\n";
+			ions_pos_str = "";
+			
+		}
 
     }
     return;
@@ -272,8 +275,8 @@ void compute_density_profile(int cpmdstep, double density_profile_samples, vecto
             outden.close();
             desnity_pr_str = desnity_pr_str + "####_Density_Profile_Wrapper_Over_####";
             if (!cpmdremote.verbose) {
-                cout << desnity_pr_str << "\n";
-                cout_energy_data();
+                //cout << desnity_pr_str << "\n";
+				cout_energy_data();
             }
         }
 
