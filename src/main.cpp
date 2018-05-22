@@ -157,7 +157,7 @@ int main(int argc, char *argv[]) {
 #pragma omp parallel default(shared)
         {
             if (omp_get_thread_num() == 0) {
-                printf("The app comes with MPI and OpenMP (Hybrid) parallelization)\n");
+                printf("The app comes with MPI and OpenMP (Hybrid) parallelization\n");
                 printf("Number of MPI processes used %d\n", numOfNodes);
                 printf("Number of OpenMP threads per MPI process %d\n", omp_get_num_threads());
                 printf("Make sure that number of grid points / ions is greater than %d\n",
@@ -186,7 +186,7 @@ int main(int argc, char *argv[]) {
         nanoparticle.POLARIZED = true;
 
     if (world.rank() == 0)
-        cout << "np is polarized " << nanoparticle.POLARIZED << endl;
+        cout << "NP is polarized " << nanoparticle.POLARIZED << endl;
 
     nanoparticle.RANDOMIZE_ION_FEATURES = false;
 
@@ -214,35 +214,42 @@ int main(int argc, char *argv[]) {
     if (world.rank() == 0) {
         // output to screen the parameters of the problem
         cout << "\n";
-        cout << "Reduced units: scalefactor entering in Coloumb interaction is " << scalefactor << endl;
-        cout << "Other units : length (cms) " << unitlength * pow(10.0, -7) << " | " << "energy(ergs) " << unitenergy
-             << " | " << "mass(g) " << unitmass << " | " << "time(s) " << unittime << endl;
-        cout << "Radius of the dielectric sphere (interface) " << nanoparticle.radius << endl;
+        if (cpmdremote.verbose)
+		cout << "Reduced units: scalefactor entering in Coloumb interaction is " << scalefactor << endl;
+        cout << "Units : length (cms) " << unitlength * pow(10.0, -7) << " | " << "energy (ergs) " << unitenergy
+             << " | " << "mass (g) " << unitmass << " | " << "time (s) " << unittime << endl;
+        cout << "Radius of the NP (nanosphere) " << nanoparticle.radius << endl;
         cout << "Nanoparticle charge " << nanoparticle.bare_charge << endl;
         cout << "Permittivity inside " << nanoparticle.ein << endl;
         cout << "Permittivity outside " << nanoparticle.eout << endl;
-        cout << "Contrast strength "
-             << 2 * (nanoparticle.eout - nanoparticle.ein) / (nanoparticle.eout + nanoparticle.ein)
+        if (cpmdremote.verbose)
+	    cout << "Contrast strength " << 2 * (nanoparticle.eout - nanoparticle.ein) / (nanoparticle.eout + nanoparticle.ein)
              << endl;
         cout << "Counterion valency " << counterion_valency << endl;
-        cout << "Salt ion valency inside " << salt_valency_in << endl;
-        cout << "Salt ion valency outside " << salt_valency_out << endl;
-        cout << "Counterion diameter " << counterion_diameter / unitlength << endl;
-        cout << "Salt ion diameter inside " << saltion_diameter_in / unitlength << endl;
-        cout << "Salt ion diameter outside " << saltion_diameter_out / unitlength << endl;
-        cout << "Salt concentration inside " << salt_conc_in << endl;
-        cout << "Salt concentration outside " << salt_conc_out << endl;
-        cout << "Debye length inside " << nanoparticle.inv_kappa_in << endl;
-        cout << "Debye length outside " << nanoparticle.inv_kappa_out << endl;
-        cout << "Mean separation inside " << nanoparticle.mean_sep_in << endl;
-        cout << "Mean separation outside " << nanoparticle.mean_sep_out << endl;
-        cout << "Box radius " << nanoparticle.box_radius << endl;
+	cout << "Counterion diameter " << counterion_diameter / unitlength << endl;
+        if (cpmdremote.verbose)
+	{
+		cout << "Salt ion valency inside " << salt_valency_in << endl;
+        	cout << "Salt ion valency outside " << salt_valency_out << endl;
+       		cout << "Salt ion diameter inside " << saltion_diameter_in / unitlength << endl;
+        	cout << "Salt ion diameter outside " << saltion_diameter_out / unitlength << endl;
+        	cout << "Salt concentration inside " << salt_conc_in << endl;
+        	cout << "Salt concentration outside " << salt_conc_out << endl;
+        	cout << "Debye length inside " << nanoparticle.inv_kappa_in << endl;
+        	cout << "Debye length outside " << nanoparticle.inv_kappa_out << endl;
+        	cout << "Mean separation inside " << nanoparticle.mean_sep_in << endl;
+        	cout << "Mean separation outside " << nanoparticle.mean_sep_out << endl;
+	}
+        cout << "Simulation box (spherical) radius " << nanoparticle.box_radius << endl;
         cout << "Number of counterions " << counterion.size() << endl;
-        cout << "Number of salt ions inside " << saltion_in.size() << endl;
-        cout << "Number of salt ions outside " << saltion_out.size() << endl;
-        cout << "Temperature " << real_T << endl;
-        cout << "Number of points discretizing the interface " << s.size() << endl;
-        cout << "Binning width (uniform) " << bin[0].width << endl;
+        if (cpmdremote.verbose)
+	{
+	    cout << "Number of salt ions inside " << saltion_in.size() << endl;
+       	    cout << "Number of salt ions outside " << saltion_out.size() << endl;
+            cout << "Number of points discretizing the interface " << s.size() << endl;
+            cout << "Binning width (uniform) " << bin[0].width << endl;
+	}
+	cout << "Temperature (in units of energy/kB) " << real_T << endl;
     }
     // write to files
     // initial configuration
@@ -303,7 +310,7 @@ int main(int argc, char *argv[]) {
     if (nanoparticle.POLARIZED)
         fmd(s, ion, nanoparticle, fmdremote, cpmdremote);
     else if (world.rank() == 0)
-        cout << "no induced charges; simulation will proceed using simple MD" << endl;
+        cout << "No polarized charges detected; simulation will proceed using simple MD" << endl;
 
     // result of fmd
     ofstream induced_density("outfiles/induced_density.dat");
@@ -338,7 +345,7 @@ int main(int argc, char *argv[]) {
         fake_bath.push_back(THERMOSTAT(0, fake_T, s.size(), 0.0, 0,
                                        0));            // finally, the coding trick: dummy bath (dummy bath always has zero mass)
     }
-    if (world.rank() == 0) {
+    if (world.rank() == 0 && cpmdremote.verbose) {
         cout << "Number of chains for real system" << setw(3) << real_bath.size() - 1 << endl;
         cout << "Number of chains for fake system" << setw(3) << fake_bath.size() - 1 << endl;
     }
@@ -347,12 +354,13 @@ int main(int argc, char *argv[]) {
 
     if (world.rank() == 0) {
         // Post simulation analysis (useful for short runs, but performed otherwise too)
-        cout << "MD trust factor R (should be < 0.05) is " << compute_MD_trust_factor_R(cpmdremote.hiteqm) << endl;
-        if (nanoparticle.POLARIZED)
+        if (cpmdremote.verbose)
+	    cout << "MD trust factor R (should be < 0.05) is " << compute_MD_trust_factor_R(cpmdremote.hiteqm) << endl;
+        if (nanoparticle.POLARIZED && cpmdremote.verbose)
             cout << "MD trust factor RV (should be < 0.15) is " << compute_MD_trust_factor_R_v(cpmdremote.hiteqm)
                  << endl;
         //auto_correlation_function();
-        cout << "Program ends" << endl;
+        cout << "Simulation ends" << endl;
         cout << endl;
     }
     return 0;
