@@ -4,10 +4,11 @@
 
 void precalculate(vector<VERTEX> &s, INTERFACE &nanoparticle) {
     
-    
-
     if (world.rank() == 0)
-        cout << "First, precalculate G and H" << endl;
+        cout << "Precalculations..." << endl;
+
+    //if (world.rank() == 0)
+        //cout << "First, precalculate G and H" << endl;
 
     for (unsigned int k = 0; k < s.size(); k++) {
         for (unsigned int l = 0; l < s.size(); l++)
@@ -17,8 +18,8 @@ void precalculate(vector<VERTEX> &s, INTERFACE &nanoparticle) {
         for (unsigned int l = 0; l < s.size(); l++)
             s[k].ndotGradGreens.push_back(H(s, l, k, nanoparticle.radius));
     }
-    if (world.rank() == 0)
-        cout << "Next, one inner loop computation for gEwEw" << endl;
+    //if (world.rank() == 0)
+        //cout << "Next, one inner loop computation for gEwEw" << endl;
 
     // this will be a serial computation
     vector<vector<long double> > inner(s.size() * s.size());
@@ -35,8 +36,8 @@ void precalculate(vector<VERTEX> &s, INTERFACE &nanoparticle) {
         }
         inner[l] = row;
     }
-    if (world.rank() == 0)
-        cout << "Precalculate gwEw, gEwEq, gEwEw, fwEw, fEwEq in parallel" << endl;
+    //if (world.rank() == 0)
+        //cout << "Precalculate gwEw, gEwEq, gEwEw, fwEw, fEwEq in parallel" << endl;
 
     // parallel computation
 #pragma omp parallel default(shared) private(k, m, l, gwEw, gEwEq, gEwEw, fwEw, fEwEq)
