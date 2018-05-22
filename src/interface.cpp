@@ -36,9 +36,7 @@ INTERFACE::set_up(double salt_conc_in, double salt_conc_out, double salt_valency
     else
         box_radius = b;
 //    box_radius = radius + 0.5 + 5 * inv_kappa_out;				// NOTE change this number for testing purposes...
-    if (world.rank() == 0)
-        cout << "box radius " << box_radius << endl;
-
+    
     // discretization parameters
     number_of_vertices = N;
 
