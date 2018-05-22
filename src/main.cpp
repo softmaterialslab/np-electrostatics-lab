@@ -313,7 +313,11 @@ int main(int argc, char *argv[]) {
 
     // Fictitious molecular dynamics
     if (nanoparticle.POLARIZED)
-        fmd(s, ion, nanoparticle, fmdremote, cpmdremote);
+    {
+	    if (world.rank() == 0)
+	    	cout << "Polarized charges detected; simulation will proceed using dynamical optimization framework (CPMD)" << endl;
+	    fmd(s, ion, nanoparticle, fmdremote, cpmdremote);
+    }
     else if (world.rank() == 0)
         cout << "No polarized charges detected; simulation will proceed using simple MD" << endl;
 
