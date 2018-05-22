@@ -27,18 +27,21 @@ void fmd(vector<VERTEX> &s, vector<PARTICLE> &ion, INTERFACE &nanoparticle, CONT
     if (world.rank() == 0) {
         // Output fmd essentials
         cout << "\n";
-        cout << "F M D" << " at " << fmdremote.verify << endl;
-        cout << "Mass assigned to the fake degrees " << s[0].mu << endl;
-        cout << "Total induced charge on the interface " << nanoparticle.total_induced_charge(s) << endl;
-        cout << "Constraint is (zero if satisfied) " << constraint(s, ion, nanoparticle) << endl;
-        cout << "Time derivative of the constraint is " << dotconstraint(s) << endl;
-        cout << "Initial force on fake degree at vertex 0 " << s[0].fw << endl;
-        cout << "Initial fake kinetic energy " << kinetic_energy << endl;
-        cout << "Inital potential energy " << potential_energy << endl;
-        cout << "Initial total energy " << kinetic_energy + potential_energy << endl;
-        cout << "Time step " << fmdremote.timestep << endl;
-        cout << "Number of steps " << fmdremote.steps << endl;
-
+        cout << "Static optimization of the functional... " << " at " << fmdremote.verify << endl;
+        
+        if (cpmdremote.verbose)
+        {
+            cout << "Mass assigned to the fake degrees " << s[0].mu << endl;
+            cout << "Total induced charge on the interface " << nanoparticle.total_induced_charge(s) << endl;
+            cout << "Constraint is (zero if satisfied) " << constraint(s, ion, nanoparticle) << endl;
+            cout << "Time derivative of the constraint is " << dotconstraint(s) << endl;
+            cout << "Initial force on fake degree at vertex 0 " << s[0].fw << endl;
+            cout << "Initial fake kinetic energy " << kinetic_energy << endl;
+            cout << "Inital potential energy " << potential_energy << endl;
+            cout << "Initial total energy " << kinetic_energy + potential_energy << endl;
+            cout << "Time step " << fmdremote.timestep << endl;
+            cout << "Number of steps " << fmdremote.steps << endl;
+        }
 
         char data[200];
         sprintf(data, "outfiles/fmdv_%.06d.dat", fmdremote.verify);
@@ -107,7 +110,7 @@ void fmd(vector<VERTEX> &s, vector<PARTICLE> &ion, INTERFACE &nanoparticle, CONT
     for (unsigned int k = 0; k < s.size(); k++)
         if (samples != 0) s[k].wmean /= samples;                // average induced charge at each vertex
     average_total_induced_charge /= samples;        // average total induced charge
-    if (world.rank() == 0) {
+    if (world.rank() == 0 && cpmdremote.verbose) {
         cout << "Number of samples used to estimate induced charges " << samples << endl;
         cout << "Total induced charge on average " << average_total_induced_charge << endl;
     }
