@@ -186,7 +186,12 @@ int main(int argc, char *argv[]) {
         nanoparticle.POLARIZED = true;
 
     if (world.rank() == 0)
-        cout << "NP is polarized " << nanoparticle.POLARIZED << endl;
+    {
+	if (nanoparticle.POLARIZED)
+        	cout << "NP is polarized " << endl;
+	else
+	    	cout << "NP is not polarized " << endl;
+    }	
 
     nanoparticle.RANDOMIZE_ION_FEATURES = false;
 
