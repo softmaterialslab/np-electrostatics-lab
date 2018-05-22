@@ -29,31 +29,35 @@ void cpmd(vector <PARTICLE> &ion, vector <VERTEX> &s, INTERFACE &nanoparticle, v
     if (world.rank() == 0) {
         // Output cpmd essentials
         cout << "\n";
-        cout << "C P M D" << " on " << endl;
-        cout << "Mass assigned to the fake degrees " << s[0].mu << endl;
-        cout << "Total induced charge on the interface " << nanoparticle.total_induced_charge(s) << endl;
-        cout << "Constraint is (zero if satisfied) " << constraint(s, ion, nanoparticle) << endl;
-        cout << "Time derivative of the constraint is " << dotconstraint(s) << endl;
-        cout << "Initial force on fake degree at vertex 0 " << s[0].fw << endl;
-        cout << "Initial fake kinetic energy " << fake_ke << endl;
-        cout << "Initial ion kinetic energy " << particle_ke << endl;
-        cout << "Inital potential energy " << potential_energy << endl;
-        cout << "Initial (real + fake) system energy " << fake_ke + particle_ke + potential_energy << endl;
-        cout << "Chain length (L+1) implementation " << real_bath.size() << endl;
-        cout << "Main thermostat temperature " << real_bath[0].T << endl;
-        cout << "Main thermostat mass " << real_bath[0].Q << endl;
-        cout << "Fake chain length (L+1) implementation " << fake_bath.size() << endl;
-        cout << "Main fake thermostat temperature " << fake_bath[0].T << endl;
-        cout << "Main fake thermostat mass " << fake_bath[0].Q << endl;
-        cout << "Number of bins used for computing density profiles " << bin.size() << endl;
+        if (nanoparticle.POLARIZED)
+              cout << "Dynamical Optimization in the simulation (CPMD) is" << " on " << endl;
+        if (cpmdremote.verbose)
+        {
+                  cout << "Mass assigned to the fake degrees " << s[0].mu << endl;
+                  cout << "Total induced charge on the interface " << nanoparticle.total_induced_charge(s) << endl;
+                  cout << "Constraint is (zero if satisfied) " << constraint(s, ion, nanoparticle) << endl;
+                  cout << "Time derivative of the constraint is " << dotconstraint(s) << endl;
+                  cout << "Initial force on fake degree at vertex 0 " << s[0].fw << endl;
+                  cout << "Initial fake kinetic energy " << fake_ke << endl;
+                  cout << "Initial ion kinetic energy " << particle_ke << endl;
+                  cout << "Inital potential energy " << potential_energy << endl;
+                  cout << "Initial (real + fake) system energy " << fake_ke + particle_ke + potential_energy << endl;
+                  cout << "Chain length (L+1) implementation " << real_bath.size() << endl;
+                  cout << "Main thermostat temperature " << real_bath[0].T << endl;
+                  cout << "Main thermostat mass " << real_bath[0].Q << endl;
+                  cout << "Fake chain length (L+1) implementation " << fake_bath.size() << endl;
+                  cout << "Main fake thermostat temperature " << fake_bath[0].T << endl;
+                  cout << "Main fake thermostat mass " << fake_bath[0].Q << endl;
+                  cout << "Number of bins used for computing density profiles " << bin.size() << endl;
+                  cout << "Number of steps " << cpmdremote.steps << endl;
+                  cout << "Write basic files every " << cpmdremote.writedata << " steps" << endl;
+                  cout << "Production begins at " << cpmdremote.hiteqm << endl;
+                  cout << "Sampling frequency " << cpmdremote.freq << endl;
+                  cout << "Extra computation every " << cpmdremote.extra_compute << " steps" << endl;
+                  cout << "Verification every " << cpmdremote.verify << " steps" << endl;
+                  cout << "Write density profile every " << cpmdremote.writedensity << endl;
+        }
         cout << "Time step " << cpmdremote.timestep << endl;
-        cout << "Number of steps " << cpmdremote.steps << endl;
-        cout << "Write basic files every " << cpmdremote.writedata << " steps" << endl;
-        cout << "Production begins at " << cpmdremote.hiteqm << endl;
-        cout << "Sampling frequency " << cpmdremote.freq << endl;
-        cout << "Extra computation every " << cpmdremote.extra_compute << " steps" << endl;
-        cout << "Verification every " << cpmdremote.verify << " steps" << endl;
-        cout << "Write density profile every " << cpmdremote.writedensity << endl;
     }
     double energy_samples = 0;
     double average_functional_deviation = 0.0;        // average deviation from the B O surface
@@ -223,7 +227,7 @@ void cpmd(vector <PARTICLE> &ion, vector <VERTEX> &s, INTERFACE &nanoparticle, v
     ofstream final_configuration("outfiles/final_configuration.dat");
     for (unsigned int i = 0; i < ion.size(); i++)
         final_configuration << ion[i].posvec << endl;
-    if (world.rank() == 0) {
+    if (world.rank() == 0 && cpmdremote.verbose) {
         cout << "Number of samples used to compute energy" << setw(10) << energy_samples << endl;
         cout << "Number of samples used to get density profile" << setw(10) << density_profile_samples << endl;
         if (nanoparticle.POLARIZED)
