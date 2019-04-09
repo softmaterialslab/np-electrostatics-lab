@@ -1,14 +1,24 @@
-// This is a header file for the INTERFACE class.  
+// This is particle class
 
-#ifndef _INTERFACE_H
-#define _INTERFACE_H
+#ifndef _NANOPARTICLE_H
+#define _NANOPARTICLE_H
 
-#include "utility.h"
-#include "vector3d.h"
+#include <iostream>
+#include<string>
 #include "particle.h"
+#include "vector3d.h"
 #include "vertex.h"
+#include "control.h"
+#include "BinShell.h"
+#include "BinRing.h"
+#include "thermostat.h"
+#include "mpi_utility.h"
 
-class INTERFACE {
+
+
+using namespace std;
+
+class NanoParticle {
 
 private:
     friend class boost::serialization::access;
@@ -36,6 +46,8 @@ private:
 
     }
 
+
+
 public:
 
     VECTOR3D posvec;        // position vector of the inteface, for sphere its center
@@ -45,23 +57,23 @@ public:
     double em;            // permittivity at the interface, mean
     double ed;            // permittivity change at the inteface, difference scaled by 4 pi
     double box_radius;        // radius of the spherical box in which all the action occurs
-
     double lB_in;            // Bjerrum length inside
     double lB_out;        // Bjerrum length outside
     double inv_kappa_in;        // debye length inside
     double inv_kappa_out;        // debye length outside
     double mean_sep_in;        // mean separation inside
     double mean_sep_out;        // mean separation outside
-
     int number_of_vertices;    // number of points used to discretize the interface
-
     double bare_charge;        // bare charge on the membrane (interface)
-
-    double area_np;		// area of the nano particle
-
+    double area_np;        // area of the nano particle
     bool POLARIZED;        // is the nanoparticle polarized; depends on ein, eout
-
     bool RANDOMIZE_ION_FEATURES;    // are selections randomized
+    int shape_id = -1;                   //Shape id number -> initialized to non type
+
+    // make a particle constructor
+    NanoParticle();
+
+    // member functions definitions
 
     void set_up(double, double, double, double, int, double);
 
@@ -73,38 +85,46 @@ public:
 
     void discretize(vector<VERTEX> &);
 
-    INTERFACE(VECTOR3D get_posvec = VECTOR3D(0, 0, 0), double get_radius = 0, double get_ein = 1, double get_eout = 1,
-              double get_bare_charge = 0) {
-        posvec = get_posvec;
-        radius = get_radius;
-        ein = get_ein;
-        eout = get_eout;
-        bare_charge = get_bare_charge;
-        area_np = set_surface_area_np(get_radius);
-    }
-
     // total charge inside
-    double total_charge_inside(vector<PARTICLE> &ion) {
-        double charge = 0;
-        for (unsigned int i = 0; i < ion.size(); i++)
-            if (ion[i].posvec.GetMagnitude() < radius) charge += ion[i].q;
-        return charge;
-    }
+    double total_charge_inside(vector<PARTICLE> &);
 
     // total induced charge
-    double total_induced_charge(vector<VERTEX> &s) {
-        double charge = 0;
-        for (unsigned int k = 0; k < s.size(); k++)
-            charge += s[k].w * s[k].a;
-        return charge;
-    }
+    double total_induced_charge(vector<VERTEX> &);
+
     // calculate the area of np
-    double set_surface_area_np(double radius){
+    double set_surface_area_np(double);
 
-        return (4.0) * pi * pow(radius, 2);
+    // member functions definitions for child classes
+    // make bins for disk
+    virtual void make_bins();
 
-    }
+    // bin ions to get density profile for disk
+    virtual void bin_ions();
+
+    // compute initial density profile
+    virtual void compute_initial_density_profile();
+
+    // compute density profile
+    virtual void compute_density_profile();
+
+    // compute final density profile
+    virtual void compute_final_density_profile();
+
+    //update time step
+    virtual void updateStep(int );
+
+    //update the number of samples used for density profile
+    virtual void updateSamples(double );
+
+    //get NP type
+    virtual string getType();
+
+    //print number of bins used
+    virtual void printBinSize();
+
+    //get NP type
+    virtual void printType();
+
 };
 
 #endif
-

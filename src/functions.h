@@ -4,15 +4,17 @@
 #define _FUNCTIONS_H
 
 #include "utility.h"
-#include "interface.h"
+#include "NanoParticle.h"
 #include "particle.h"
 #include "vertex.h"
 #include "control.h"
-#include "BIN.h"
+#include "BinShell.h"
+#include "BinRing.h"
 #include "thermostat.h"
 #include "forces.h"
 #include "energies.h"
 #include "mpi_utility.h"
+
 
 #define PBSTR "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
 #define PBWIDTH 60
@@ -22,39 +24,28 @@
 // overloaded << to print 3d vectors
 ostream &operator<<(ostream &, VECTOR3D);
 
-// make bins
-void make_bins(vector<BIN> &, INTERFACE &, double);
-
-// bin ions
-void bin_ions(vector<PARTICLE> &, INTERFACE &, vector<double> &, vector<BIN> &);
-
 // initialize particle velocities
-void initialize_particle_velocities(vector<PARTICLE> &, vector<THERMOSTAT> &, INTERFACE &);
+void initialize_particle_velocities(vector<PARTICLE> &, vector<THERMOSTAT> &, NanoParticle *);
 
 // initialize fake velocities
-void initialize_fake_velocities(vector<VERTEX> &, vector<THERMOSTAT> &, INTERFACE &);
+void initialize_fake_velocities(vector<VERTEX> &, vector<THERMOSTAT> &, NanoParticle *);
 
 // fictious molecular dynamics (fmd)
-void fmd(vector<VERTEX> &, vector<PARTICLE> &, INTERFACE &, CONTROL &, CONTROL &);
+void fmd(vector<VERTEX> &, vector<PARTICLE> &, NanoParticle *, CONTROL &, CONTROL &);
 
 // car parrinello molecular dynamics (cpmd)
-void cpmd(vector<PARTICLE> &, vector<VERTEX> &, INTERFACE &, vector<THERMOSTAT> &, vector<THERMOSTAT> &, vector<BIN> &,
-          CONTROL &, CONTROL &);
+void cpmd(vector<PARTICLE> &, vector<VERTEX> &, NanoParticle *, vector<THERMOSTAT> &, vector<THERMOSTAT> &, CONTROL &, CONTROL &);
 
 // compute and write useful data in cpmd
 void compute_n_write_useful_data(int, vector<PARTICLE> &, vector<VERTEX> &, vector<THERMOSTAT> &, vector<THERMOSTAT> &,
-                                 INTERFACE &, CONTROL &);
+                                 NanoParticle *);
 
 // verify with F M D
-double verify_with_FMD(int, vector<VERTEX>, vector<PARTICLE> &, INTERFACE &, CONTROL &, CONTROL &);
+double verify_with_FMD(int, vector<VERTEX>, vector<PARTICLE> &, NanoParticle *, CONTROL &, CONTROL &);
 
 // make movie
-void make_movie(int num, vector<PARTICLE> &ion, INTERFACE &nanoparticle, CONTROL &);
+void make_movie(int num, vector<PARTICLE> &, NanoParticle *);
 
-// compute density profile
-void
-compute_density_profile(int, double, vector<double> &, vector<double> &, vector<PARTICLE> &, INTERFACE &, vector<BIN> &,
-                        CONTROL &);
 
 // post analysis : compute R
 double compute_MD_trust_factor_R(int);
@@ -64,10 +55,6 @@ double compute_MD_trust_factor_R_v(int);
 
 // display progress bar (code from the internet)
 void progressBar(double);
-
-void cout_energy_data();
-
-// display progress bar (code from the internet)
 
 // post analysis : auto correlation function
 //void auto_correlation_function();
@@ -109,16 +96,16 @@ inline VECTOR3D GradndotGrad(VECTOR3D &vec1, VECTOR3D &vec2, VECTOR3D &normal) {
 // -------------------------------------------
 
 // constraint equation
-inline long double constraint(vector<VERTEX> &s, vector<PARTICLE> &ion, INTERFACE &nanoparticle) {
-    return (nanoparticle.total_induced_charge(s) -
-           nanoparticle.total_charge_inside(ion) * (1 / nanoparticle.eout - 1 / nanoparticle.ein));
+inline long double constraint(vector<VERTEX> &s, vector<PARTICLE> &ion, NanoParticle *nanoParticle) {
+    return (nanoParticle->total_induced_charge(s) -
+            nanoParticle->total_charge_inside(ion) * (1 / nanoParticle->eout - 1 / nanoParticle->ein));
 }
 
 // SHAKE to ensure constraint is true
-inline void SHAKE(vector<VERTEX> &s, vector<PARTICLE> &ion, INTERFACE &nanoparticle,
+inline void SHAKE(vector<VERTEX> &s, vector<PARTICLE> &ion, NanoParticle *nanoParticle,
                   CONTROL &simremote)    // remote of the considered simulation
 {
-    long double sigma = constraint(s, ion, nanoparticle);
+    long double sigma = constraint(s, ion, nanoParticle);
     for (unsigned int k = 0; k < s.size(); k++)
         s[k].vw = s[k].vw - (1.0 / simremote.timestep) * sigma / (s[k].a * int(s.size()));
     for (unsigned int k = 0; k < s.size(); k++)
@@ -168,7 +155,7 @@ inline void update_chain_xi(unsigned int j, vector<THERMOSTAT> &bath, double dt,
 
 inline void
 write_basic_files(int write, int cpmdstep, vector<PARTICLE> &ion, vector<VERTEX> &s, vector<THERMOSTAT> &real_bath,
-                  vector<THERMOSTAT> &fake_bath, INTERFACE &nanoparticle) {
+                  vector<THERMOSTAT> &fake_bath, NanoParticle *nanoParticle) {
     
     
 

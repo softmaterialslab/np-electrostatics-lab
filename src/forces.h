@@ -6,12 +6,11 @@
 
 #include "vertex.h"
 #include "particle.h"
-#include "interface.h"
 #include "functions.h"
 
-void for_fmd_calculate_force(vector<VERTEX> &, vector<PARTICLE> &, INTERFACE &);
+void for_fmd_calculate_force(vector<VERTEX> &, vector<PARTICLE> &, NanoParticle *);
 
 void
-for_cpmd_calculate_force(vector<VERTEX> &, vector<PARTICLE> &, INTERFACE &);
+for_cpmd_calculate_force(vector<VERTEX> &, vector<PARTICLE> &, NanoParticle *);
 
 #endif 

@@ -4,10 +4,10 @@
 #define _PRECAL_H
 
 #include "vertex.h"
-#include "interface.h"
+#include "NanoParticle.h"
 #include "functions.h"
 
-void precalculate(vector<VERTEX>&, INTERFACE&);
+void precalculate(vector<VERTEX>&, NanoParticle *);
 
 #endif
 

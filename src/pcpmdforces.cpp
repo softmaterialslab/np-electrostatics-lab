@@ -6,7 +6,7 @@
 
 // Total Force on all degrees of freedom
 void
-for_cpmd_calculate_force(vector<VERTEX> &s, vector<PARTICLE> &ion, INTERFACE &nanoparticle) {
+for_cpmd_calculate_force(vector<VERTEX> &s, vector<PARTICLE> &ion, NanoParticle *nanoParticle) {
 
     // force calculation for fake degrees of freedom
     // gwq : force due to induced charge (w) - ion (q) interaction
@@ -42,7 +42,7 @@ for_cpmd_calculate_force(vector<VERTEX> &s, vector<PARTICLE> &ion, INTERFACE &na
     unsigned int iloop, j1;
 
 
-    if (nanoparticle.POLARIZED) {
+    if (nanoParticle->POLARIZED) {
         // declarations (necessary beforehand for parallel implementation)
         long double gwq, gww_wEw_EwEw, gEwq, gwEq, gwEq_EwEq;
         long double hqEw, hqEq, hEqw, hEqEq, hEqEw;
@@ -133,22 +133,22 @@ for_cpmd_calculate_force(vector<VERTEX> &s, vector<PARTICLE> &ion, INTERFACE &na
             hqEq = 0;
             for (l1 = 0; l1 < ion.size(); l1++)
                 hqEq = hqEq + (s[kloop].Gion[l1] * (ion[l1].q / ion[l1].epsilon));
-            hqEq = hqEq * (-1.0 * 0.5 * nanoparticle.ed);
+            hqEq = hqEq * (-1.0 * 0.5 * nanoParticle->ed);
 
             hEqw = 0;
             for (l1 = 0; l1 < s.size(); l1++)
                 hEqw = hEqw + s[kloop].Greens[l1] * s[l1].w * s[l1].a;
-            hEqw = hEqw * (-1.0 * (-0.5) * nanoparticle.ed * (2 * nanoparticle.em - 1));
+            hEqw = hEqw * (-1.0 * (-0.5) * nanoParticle->ed * (2 * nanoParticle->em - 1));
 
             hEqEq = 0;
             for (l1 = 0; l1 < s.size(); l1++)
                 hEqEq = hEqEq + s[kloop].Greens[l1] * saveinsumGather[l1] * s[l1].a;
-            hEqEq = hEqEq * (-1.0 * nanoparticle.ed * nanoparticle.ed);
+            hEqEq = hEqEq * (-1.0 * nanoParticle->ed * nanoParticle->ed);
 
             hEqEw = 0;
             for (l1 = 0; l1 < s.size(); l1++)
                 hEqEw = hEqEw + s[kloop].presumhEqEw[l1] * s[l1].w * s[l1].a;
-            hEqEw = hEqEw * (-1.0 * nanoparticle.ed * nanoparticle.ed);
+            hEqEw = hEqEw * (-1.0 * nanoParticle->ed * nanoParticle->ed);
 
             innerh4[kloop - lowerBoundMesh] = (hqEq + hEqw + hEqEq + hEqEw);
         }
@@ -174,23 +174,23 @@ for_cpmd_calculate_force(vector<VERTEX> &s, vector<PARTICLE> &ion, INTERFACE &na
         for (kloop = lowerBoundMesh; kloop <= upperBoundMesh; kloop++) {
             gwq = 0;
             for (l1 = 0; l1 < ion.size(); l1++)
-                gwq += (-1.0) * (0.5 - 0.5 * nanoparticle.em / ion[l1].epsilon) * ion[l1].q * s[kloop].Gion[l1];
+                gwq += (-1.0) * (0.5 - 0.5 * nanoParticle->em / ion[l1].epsilon) * ion[l1].q * s[kloop].Gion[l1];
 
             gww_wEw_EwEw = 0;
             for (l1 = 0; l1 < s.size(); l1++)
-                gww_wEw_EwEw += ((-1.0) * nanoparticle.em * (nanoparticle.em - 1) * s[kloop].Greens[l1] +
-                                 0.5 * nanoparticle.ed * (2 * nanoparticle.em - 1) * s[kloop].presumgwEw[l1] +
-                                 (-1.0) * nanoparticle.ed * nanoparticle.ed * s[kloop].presumgEwEw[l1]) * s[l1].w *
+                gww_wEw_EwEw += ((-1.0) * nanoParticle->em * (nanoParticle->em - 1) * s[kloop].Greens[l1] +
+                                 0.5 * nanoParticle->ed * (2 * nanoParticle->em - 1) * s[kloop].presumgwEw[l1] +
+                                 (-1.0) * nanoParticle->ed * nanoParticle->ed * s[kloop].presumgEwEw[l1]) * s[l1].w *
                                 s[l1].a;
 
             gEwq = 0;
             for (l1 = 0; l1 < s.size(); l1++)
-                gEwq += (-1.0) * 0.5 * nanoparticle.ed * s[kloop].ndotGradGreens[l1] * innerg3Gather[l1] * s[l1].a;
+                gEwq += (-1.0) * 0.5 * nanoParticle->ed * s[kloop].ndotGradGreens[l1] * innerg3Gather[l1] * s[l1].a;
 
             gwEq_EwEq = 0;
             for (l1 = 0; l1 < s.size(); l1++)
-                gwEq_EwEq += (0.5 * nanoparticle.ed * (2 * nanoparticle.em - 1) * s[kloop].Greens[l1] +
-                              (-1.0) * nanoparticle.ed * nanoparticle.ed * s[kloop].presumgEwEq[l1]) *
+                gwEq_EwEq += (0.5 * nanoParticle->ed * (2 * nanoParticle->em - 1) * s[kloop].Greens[l1] +
+                              (-1.0) * nanoParticle->ed * nanoParticle->ed * s[kloop].presumgEwEq[l1]) *
                              innerg4Gather[l1] *
                              s[l1].a;
 
@@ -211,8 +211,8 @@ for_cpmd_calculate_force(vector<VERTEX> &s, vector<PARTICLE> &ion, INTERFACE &na
         // force calculation for real ions (this was in parallel with the previous for loop)
 #pragma omp parallel for schedule(dynamic) default(shared) private(iloop, l1, h0, h1, h2, h3)
         for (iloop = lowerBoundIons; iloop <= upperBoundIons; iloop++) {
-            //h0 = ((Grad(ion[iloop].posvec, nanoparticle.posvec)) ^
-            //      ((-1.0) * nanoparticle.bare_charge * ion[iloop].q * 1.0 / ion[iloop].epsilon));
+            //h0 = ((Grad(ion[iloop].posvec, nanoParticle->posvec)) ^
+            //      ((-1.0) * nanoParticle->bare_charge * ion[iloop].q * 1.0 / ion[iloop].epsilon));
 
             h0 = VECTOR3D(0, 0, 0);
             for (int k = 0; k < s.size(); k++)
@@ -227,8 +227,8 @@ for_cpmd_calculate_force(vector<VERTEX> &s, vector<PARTICLE> &ion, INTERFACE &na
                            ((-0.5) * ion[iloop].q * ion[l1].q * (1 / ion[iloop].epsilon + 1 / ion[l1].epsilon)));
             }
 
-            double aqw = -1.0 * ion[iloop].q * (0.5 - nanoparticle.em / (2.0 * ion[iloop].epsilon));
-            double bqEqw = -1.0 * 0.5 * nanoparticle.ed * ion[iloop].q / ion[iloop].epsilon;
+            double aqw = -1.0 * ion[iloop].q * (0.5 - nanoParticle->em / (2.0 * ion[iloop].epsilon));
+            double bqEqw = -1.0 * 0.5 * nanoParticle->ed * ion[iloop].q / ion[iloop].epsilon;
             h2 = VECTOR3D(0, 0, 0);
             for (l1 = 0; l1 < s.size(); l1++)
                 h2 = h2 +
@@ -269,8 +269,8 @@ for_cpmd_calculate_force(vector<VERTEX> &s, vector<PARTICLE> &ion, INTERFACE &na
 
 #pragma omp parallel for schedule(dynamic) default(shared) private(iloop, j1, h0, h1)
         for (iloop = lowerBoundIons; iloop <= upperBoundIons; iloop++) {
-            //h0 = ((Grad(ion[iloop].posvec, nanoparticle.posvec)) ^
-             //     ((-1.0) * nanoparticle.bare_charge * ion[iloop].q * 1.0 / ion[iloop].epsilon));
+            //h0 = ((Grad(ion[iloop].posvec, nanoParticle->posvec)) ^
+             //     ((-1.0) * nanoParticle->bare_charge * ion[iloop].q * 1.0 / ion[iloop].epsilon));
 
             h0 = VECTOR3D(0, 0, 0);
             for (int k = 0; k < s.size(); k++)
@@ -305,11 +305,11 @@ for_cpmd_calculate_force(vector<VERTEX> &s, vector<PARTICLE> &ion, INTERFACE &na
 
     for (iloop = lowerBoundIons; iloop <= upperBoundIons; iloop++) {
         VECTOR3D fljcs = VECTOR3D(0, 0, 0);
-        if (ion[iloop].posvec.GetMagnitude() < nanoparticle.radius)
+        if (ion[iloop].posvec.GetMagnitude() < nanoParticle->radius)
             continue;
 
-        PARTICLE dummy = PARTICLE(0, ion[iloop].diameter, 0, 0, 0, nanoparticle.ein,
-                                  ion[iloop].posvec ^ ((nanoparticle.radius -
+        PARTICLE dummy = PARTICLE(0, ion[iloop].diameter, 0, 0, 0, nanoParticle->ein,
+                                  ion[iloop].posvec ^ ((nanoParticle->radius -
                                                         0.5 *
                                                         ion[iloop].diameter) /
                                                        ion[iloop].posvec.GetMagnitude()));
@@ -356,8 +356,8 @@ for_cpmd_calculate_force(vector<VERTEX> &s, vector<PARTICLE> &ion, INTERFACE &na
     // ion-box
     // make a dummy particle with the same diameter as the ion just above the simulation box
     for (iloop = lowerBoundIons; iloop <= upperBoundIons; iloop++) {
-        PARTICLE dummy = PARTICLE(0, ion[iloop].diameter, 0, 0, 0, nanoparticle.eout, ion[iloop].posvec ^
-                                                                                      ((nanoparticle.box_radius +
+        PARTICLE dummy = PARTICLE(0, ion[iloop].diameter, 0, 0, 0, nanoParticle->eout, ion[iloop].posvec ^
+                                                                                      ((nanoParticle->box_radius +
                                                                                         0.5 * ion[iloop].diameter) /
                                                                                        ion[iloop].posvec.GetMagnitude()));
         VECTOR3D r_vec = ion[iloop].posvec - dummy.posvec;
@@ -380,11 +380,11 @@ for_cpmd_calculate_force(vector<VERTEX> &s, vector<PARTICLE> &ion, INTERFACE &na
     // make a dummy particle with the same diameter as the ion just above the interface
     for (iloop = lowerBoundIons; iloop <= upperBoundIons; iloop++) {
 
-        if (ion[iloop].posvec.GetMagnitude() > nanoparticle.radius)
+        if (ion[iloop].posvec.GetMagnitude() > nanoParticle->radius)
             continue;
 
-        PARTICLE dummy = PARTICLE(0, ion[iloop].diameter, 0, 0, 0, nanoparticle.eout, ion[iloop].posvec ^
-                                                                                      ((nanoparticle.radius +
+        PARTICLE dummy = PARTICLE(0, ion[iloop].diameter, 0, 0, 0, nanoParticle->eout, ion[iloop].posvec ^
+                                                                                      ((nanoParticle->radius +
                                                                                         0.5 * ion[iloop].diameter) /
                                                                                        ion[iloop].posvec.GetMagnitude()));
         VECTOR3D r_vec = ion[iloop].posvec - dummy.posvec;

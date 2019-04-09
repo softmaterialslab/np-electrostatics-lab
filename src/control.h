@@ -11,7 +11,6 @@ class CONTROL
     template<class Archive>
     void serialize(Archive &ar, const unsigned int version)
     {
-        ar & verbose;
         ar & fakemass;
         ar & timestep;
         ar & steps;

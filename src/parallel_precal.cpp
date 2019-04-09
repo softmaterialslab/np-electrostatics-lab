@@ -2,13 +2,12 @@
 
 #include "precalculations.h"
 
-void precalculate(vector<VERTEX> &s, INTERFACE &nanoparticle) {
+void precalculate(vector<VERTEX> &s, NanoParticle *nanoParticle) {
     
+    
+
     if (world.rank() == 0)
         cout << "Precalculations..." << endl;
-
-    //if (world.rank() == 0)
-        //cout << "First, precalculate G and H" << endl;
 
     for (unsigned int k = 0; k < s.size(); k++) {
         for (unsigned int l = 0; l < s.size(); l++)
@@ -16,10 +15,10 @@ void precalculate(vector<VERTEX> &s, INTERFACE &nanoparticle) {
     }
     for (unsigned int k = 0; k < s.size(); k++) {
         for (unsigned int l = 0; l < s.size(); l++)
-            s[k].ndotGradGreens.push_back(H(s, l, k, nanoparticle.radius));
+            s[k].ndotGradGreens.push_back(H(s, l, k, nanoParticle->radius));
     }
     //if (world.rank() == 0)
-        //cout << "Next, one inner loop computation for gEwEw" << endl;
+    //    cout << "Next, one inner loop computation for gEwEw" << endl;
 
     // this will be a serial computation
     vector<vector<long double> > inner(s.size() * s.size());
@@ -31,13 +30,13 @@ void precalculate(vector<VERTEX> &s, INTERFACE &nanoparticle) {
         for (n = 0; n < s.size(); n++) {
             pre_gEwEw = 0;
             for (m = 0; m < s.size(); m++)
-                pre_gEwEw += G(s, l, m) * H(s, n, m, nanoparticle.radius) * s[m].a;
+                pre_gEwEw += G(s, l, m) * H(s, n, m, nanoParticle->radius) * s[m].a;
             row[n] = pre_gEwEw;
         }
         inner[l] = row;
     }
     //if (world.rank() == 0)
-        //cout << "Precalculate gwEw, gEwEq, gEwEw, fwEw, fEwEq in parallel" << endl;
+    //    cout << "Precalculate gwEw, gEwEq, gEwEw, fwEw, fEwEq in parallel" << endl;
 
     // parallel computation
 #pragma omp parallel default(shared) private(k, m, l, gwEw, gEwEq, gEwEw, fwEw, fEwEq)
@@ -48,33 +47,33 @@ void precalculate(vector<VERTEX> &s, INTERFACE &nanoparticle) {
                 // gwEw
                 gwEw = 0;
                 for (l = 0; l < s.size(); l++)
-                    gwEw += (H(s, k, l, nanoparticle.radius) * G(s, m, l) +
-                             G(s, k, l) * H(s, m, l, nanoparticle.radius)) * s[l].a;
+                    gwEw += (H(s, k, l, nanoParticle->radius) * G(s, m, l) +
+                             G(s, k, l) * H(s, m, l, nanoParticle->radius)) * s[l].a;
                 s[k].presumgwEw[m] = gwEw;
 
                 // gEwEq
                 gEwEq = 0;
                 for (l = 0; l < s.size(); l++)
-                    gEwEq += (H(s, k, l, nanoparticle.radius) * G(s, m, l)) * s[l].a;
+                    gEwEq += (H(s, k, l, nanoParticle->radius) * G(s, m, l)) * s[l].a;
                 s[k].presumgEwEq[m] = gEwEq;
 
                 // gEwEw
                 gEwEw = 0;
                 for (l = 0; l < s.size(); l++)
-                    gEwEw += H(s, k, l, nanoparticle.radius) * inner[l][m] *
+                    gEwEw += H(s, k, l, nanoParticle->radius) * inner[l][m] *
                              s[l].a;        // NOTE the switch from n to m
                 s[k].presumgEwEw[m] = gEwEw;
 
                 // fwEw
                 fwEw = 0;
                 for (l = 0; l < s.size(); l++)
-                    fwEw += G(s, k, l) * H(s, m, l, nanoparticle.radius) * s[l].a;
+                    fwEw += G(s, k, l) * H(s, m, l, nanoParticle->radius) * s[l].a;
                 s[k].presumfwEw[m] = fwEw;
 
                 // fEwEq
                 fEwEq = 0;
                 for (l = 0; l < s.size(); l++)
-                    fEwEq += G(s, k, l) * H(s, m, l, nanoparticle.radius) * s[l].a;
+                    fEwEq += G(s, k, l) * H(s, m, l, nanoParticle->radius) * s[l].a;
                 s[k].presumfEwEq[m] = fEwEq;
             }
         }

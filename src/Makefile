@@ -19,7 +19,7 @@ CFLAG = -c
 OFLAG = -o
 
 PROG = np_electrostatics_lab
-OBJ = main.o interface.o functions.o parallel_precal.o pfmdforces.o pcpmdforces.o penergies.o fmd.o cpmd.o
+OBJ = main.o NanoParticle.o NanoParticleSphere.o NanoParticleDisk.o functions.o parallel_precal.o pfmdforces.o pcpmdforces.o penergies.o fmd.o cpmd.o BinRing.o BinShell.o
 
 all: $(PROG)
 
@@ -48,13 +48,3 @@ else
 %.o : %.cpp
 	$(CC) -c $(CFLAG) $< -o $@	
 endif
-
-main.o: functions.h precalculations.h
-interface.o: interface.h functions.h
-functions.o: functions.h
-parallel_precal.o: precalculations.h
-pfmdforces.o: forces.h
-pcpmdforces.o: forces.h
-penergies.o: energies.h
-fmd.o: functions.h
-cpmd.o: functions.h

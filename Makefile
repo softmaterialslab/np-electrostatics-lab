@@ -1,7 +1,8 @@
 #This make file builds the sub folder make files
 PROG = np_electrostatics_lab
 JOBSCR = iu_cluster_job_script.pbs
-TESTSCR = test.pbs
+TESTDiskSCR = test_disk.pbs
+TESTSphereSCR = test_sphere.pbs
 BIN = bin
 BASE = src
 SCRIPT = scripts
@@ -42,10 +43,15 @@ cluster-submit:
 	cp -f $(SCRIPT)/$(JOBSCR) $(BIN)
 	+$(MAKE) -C $(BIN) submit
 
-cluster-test-submit:
+cluster-test-disk-submit:
 	@echo "Installing test jobscript into $(BIN) directory"
-	cp -f $(SCRIPT)/$(TESTSCR) $(BIN)
-	+$(MAKE) -C $(BIN) test
+	cp -f $(SCRIPT)/$(TESTDiskSCR) $(BIN)
+	+$(MAKE) -C $(BIN) test_disk
+
+cluster-test-sphere-submit:
+	@echo "Installing test jobscript into $(BIN) directory"
+	cp -f $(SCRIPT)/$(TESTSphereSCR) $(BIN)
+	+$(MAKE) -C $(BIN) test_sphere
 
 clean:
 	rm -f $(BASE)/*.o

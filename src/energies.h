@@ -3,7 +3,6 @@
 #ifndef _ENERGIES_H
 #define _ENERGIES_H
 
-#include "interface.h"
 #include "particle.h"
 #include "vertex.h"
 #include "thermostat.h"
@@ -49,7 +48,7 @@ inline double bath_potential_energy(vector<THERMOSTAT>& bath)
   return potential_energy;
 }
 
-double energy_functional(vector<VERTEX>&, vector<PARTICLE>&, INTERFACE&);
+double energy_functional(vector<VERTEX>&, vector<PARTICLE>&, NanoParticle *);
 
 #endif
 

@@ -1,13 +1,43 @@
 // This file contains member functions for interface class
 
-#include "interface.h"
-#include "functions.h"
+#include "NanoParticle.h"
+
+//defulat constructor body
+NanoParticle::NanoParticle(){}
+
+void NanoParticle::make_bins(){}
+
+// bin ions to get density profile for disk
+void NanoParticle::bin_ions(){}
+
+// compute initial density profile
+void NanoParticle::compute_initial_density_profile(){}
+
+// compute density profile
+void NanoParticle::compute_density_profile(){}
+
+// compute final density profile
+void NanoParticle::compute_final_density_profile(){}
+
+//update time step
+void NanoParticle::updateStep(int cpmdstep){}
+
+//update the number of samples used for density profile
+void NanoParticle::updateSamples(double density_profile_samples){}
+
+//get NP type
+string NanoParticle::getType(){return "";}
+
+//print number of bins used
+void NanoParticle::printBinSize(){}
+
+void NanoParticle::printType(){}
 
 void
-INTERFACE::set_up(double salt_conc_in, double salt_conc_out, double salt_valency_in, double salt_valency_out, int N,
+NanoParticle::set_up(double salt_conc_in, double salt_conc_out, double salt_valency_in, double salt_valency_out, int N,
                   double b) {
-    
-    
+
+
     // useful combinations of different dielectric constants (inside and outside)
     em = 0.5 * (ein + eout);
     ed = (eout - ein) / (4 * pi);
@@ -36,7 +66,9 @@ INTERFACE::set_up(double salt_conc_in, double salt_conc_out, double salt_valency
     else
         box_radius = b;
 //    box_radius = radius + 0.5 + 5 * inv_kappa_out;				// NOTE change this number for testing purposes...
-    
+    if (world.rank() == 0)
+        cout << "box radius " << box_radius << endl;
+
     // discretization parameters
     number_of_vertices = N;
 
@@ -44,9 +76,9 @@ INTERFACE::set_up(double salt_conc_in, double salt_conc_out, double salt_valency
 }
 
 void
-INTERFACE::put_counterions(vector<PARTICLE> &counterion, int ion_valency, double ion_diameter, vector<PARTICLE> &ion) {
-    
-    
+NanoParticle::put_counterions(vector<PARTICLE> &counterion, int ion_valency, double ion_diameter, vector<PARTICLE> &ion) {
+
+
     // establish the number of counterions first
     unsigned int total_counterions = int(abs(bare_charge / ion_valency));
     // express diameter in consistent units
@@ -89,17 +121,17 @@ INTERFACE::put_counterions(vector<PARTICLE> &counterion, int ion_valency, double
         listcounterions << "counterions" << endl;
 
         for (unsigned int i = 0; i < counterion.size(); i++)
-            listcounterions << "C" << setw(15) << counterion[i].posvec << setw(15)
+            listcounterions << "C" << setw(15) << counterion[i].posvec.x<< setw(15) << counterion[i].posvec.y
+                    << setw(15) << counterion[i].posvec.z << setw(15)
                             << counterion[i].posvec.GetMagnitude() << endl;
         listcounterions.close();
     }
     return;
 }
 
-void INTERFACE::put_saltions_inside(vector<PARTICLE> &saltion_in, int valency, double concentration, double diameter,
+void NanoParticle::put_saltions_inside(vector<PARTICLE> &saltion_in, int valency, double concentration, double diameter,
                                     vector<PARTICLE> &ion) {
-    
-    
+
     // establish the number of inside salt ions first
     // Note: salt concentration is the concentration of one kind of ions, so for total ions a factor of 2 needs to be multiplied. also some factors appear to be consistent with units.
     double volume_sphere = (4.0 / 3.0) * pi * radius * radius * radius;
@@ -144,16 +176,16 @@ void INTERFACE::put_saltions_inside(vector<PARTICLE> &saltion_in, int valency, d
         list_salt_ions_inside << saltion_in.size() << endl;
         list_salt_ions_inside << "salt ions inside" << endl;
         for (unsigned int i = 0; i < saltion_in.size(); i++)
-            list_salt_ions_inside << "Si" << setw(15) << saltion_in[i].posvec << endl;
+            list_salt_ions_inside << "Si" << setw(15) << saltion_in[i].posvec.x << setw(15) << saltion_in[i].posvec.y << setw(15) << saltion_in[i].posvec.z << endl;
         list_salt_ions_inside.close();
     }
     return;
 }
 
-void INTERFACE::put_saltions_outside(vector<PARTICLE> &saltion_out, int valency, double concentration, double diameter,
+void NanoParticle::put_saltions_outside(vector<PARTICLE> &saltion_out, int valency, double concentration, double diameter,
                                      vector<PARTICLE> &ion) {
-    
-    
+
+
     // establish the number of outside salt ions first
     // Note: salt concentration is the concentration of one kind of ions, so for total ions a factor of 2 needs to be multiplied. also some factors appear to be consistent with units.
     double volume_box = (4.0 / 3.0) * pi * (box_radius * box_radius * box_radius - radius * radius * radius);
@@ -202,20 +234,27 @@ void INTERFACE::put_saltions_outside(vector<PARTICLE> &saltion_out, int valency,
         list_salt_ions_outside << saltion_out.size() << endl;
         list_salt_ions_outside << "salt ions outside" << endl;
         for (unsigned int i = 0; i < saltion_out.size(); i++)
-            list_salt_ions_outside << "So" << setw(15) << saltion_out[i].posvec << endl;
+            list_salt_ions_outside << "So" << setw(15) << saltion_out[i].posvec.x << setw(15) << saltion_out[i].posvec.y << setw(15) << saltion_out[i].posvec.z << endl;
         list_salt_ions_outside.close();
     }
     return;
 }
 
 // discretize interface
-void INTERFACE::discretize(vector<VERTEX> &s) {
-    
-    
-    //for the disk temp change. : infiles_a10_disk
+void NanoParticle::discretize(vector<VERTEX> &s) {
+
+    //for the disk temp change. : infiles_a10_disk  | infiles_a7.5
     char filename[200];
-    sprintf(filename, "infiles_a7.5/grid%d.dat",
-            number_of_vertices); // change infiles folder if nanoparticle radius changes; for a = 2.67m nm = 7.5 sigma in reduced units, infiles_a7.5 is the folder
+    // change infiles folder if nanoparticle radius changes; for a = 2.67m nm = 7.5 sigma in reduced units, infiles_a7.5 is the folder
+
+    if(shape_id == 0){
+        sprintf(filename, "infiles_a7.5/grid%d.dat",
+                number_of_vertices);
+    }else{
+        sprintf(filename, "infiles_a7.5_disk/grid%d.dat",
+                number_of_vertices);
+    }
+
     ifstream in(filename, ios::in);
     if (!in) {
         if (world.rank() == 0)
@@ -233,9 +272,34 @@ void INTERFACE::discretize(vector<VERTEX> &s) {
         listvertices << number_of_vertices << endl;
         listvertices << "interface" << endl;
         for (unsigned int k = 0; k < s.size(); k++)
-            listvertices << "I" << setw(15) << s[k].posvec << endl;
+            listvertices << "I" << setw(15) << s[k].posvec.x << setw(15) << s[k].posvec.y << setw(15) << s[k].posvec.z<< endl;
         listvertices.close();
     }
     return;
 }
+
+// total charge inside
+double NanoParticle::total_charge_inside(vector<PARTICLE> &ion) {
+    double charge = 0;
+    for (unsigned int i = 0; i < ion.size(); i++)
+        if (ion[i].posvec.GetMagnitude() < radius) charge += ion[i].q;
+    return charge;
+}
+
+// total induced charge
+double NanoParticle::total_induced_charge(vector<VERTEX> &s) {
+    double charge = 0;
+    for (unsigned int k = 0; k < s.size(); k++)
+        charge += s[k].w * s[k].a;
+    return charge;
+}
+// calculate the area of np
+double NanoParticle::set_surface_area_np(double radius){
+
+    return (4.0) * pi * pow(radius, 2);
+
+}
+
+
+
 

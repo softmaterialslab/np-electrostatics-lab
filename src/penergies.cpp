@@ -4,7 +4,7 @@
 #include "energies.h"
 
 // Potential energy
-double energy_functional(vector<VERTEX> &s, vector<PARTICLE> &ion, INTERFACE &nanoparticle) {
+double energy_functional(vector<VERTEX> &s, vector<PARTICLE> &ion, NanoParticle *nanoParticle) {
     // Electrostatic interaction
     // fww : potential energy due to induced charge and induced charge interaction
     // fwEw : potential energy due to induced charge and E of induced charge interaction
@@ -28,7 +28,7 @@ double energy_functional(vector<VERTEX> &s, vector<PARTICLE> &ion, INTERFACE &na
     double potential,totalPotential;
     unsigned int i, j;
 
-    if (nanoparticle.POLARIZED) {
+    if (nanoParticle->POLARIZED) {
 
         /////////////POLARIZED only MPI Message objects
         vector<long double> saveinner1(sizFVecMesh, 0.0);
@@ -112,9 +112,9 @@ double energy_functional(vector<VERTEX> &s, vector<PARTICLE> &ion, INTERFACE &na
             ind_ind = 0;
             for (l = 0; l < s.size(); l++)
                 ind_ind += s[k].w * s[k].a *
-                           ((-0.5) * nanoparticle.ed * (2 * nanoparticle.em - 1) * s[k].presumfwEw[l] +
-                            0.5 * nanoparticle.em * (nanoparticle.em - 1) * s[k].Greens[l] +
-                            0.5 * nanoparticle.ed * nanoparticle.ed * s[k].presumgEwEw[l]) * s[l].w * s[l].a;
+                           ((-0.5) * nanoParticle->ed * (2 * nanoParticle->em - 1) * s[k].presumfwEw[l] +
+                            0.5 * nanoParticle->em * (nanoParticle->em - 1) * s[k].Greens[l] +
+                            0.5 * nanoParticle->ed * nanoParticle->ed * s[k].presumgEwEw[l]) * s[l].w * s[l].a;
             ind_energy[k - lowerBoundMesh] = ind_ind;
         }
 
@@ -129,21 +129,21 @@ double energy_functional(vector<VERTEX> &s, vector<PARTICLE> &ion, INTERFACE &na
 
             fwq = 0;
             for (k = 0; k < s.size(); k++)
-                fwq += ion[i].q * (0.5 - 0.5 * nanoparticle.em / ion[i].epsilon) *
+                fwq += ion[i].q * (0.5 - 0.5 * nanoParticle->em / ion[i].epsilon) *
                        (1 / ((s[k].posvec - ion[i].posvec).GetMagnitude())) * s[k].w * s[k].a;
 
             insum = 0;
             for (k = 0; k < s.size(); k++)
                 insum += (1.0 / ((ion[i].posvec - s[k].posvec).GetMagnitude())) * (saveinner1Gather[k] + inner2Gather[k]) *
                          s[k].a;
-            fqEq_qEw = 0.5 * nanoparticle.ed * ion[i].q * insum / ion[i].epsilon;
+            fqEq_qEw = 0.5 * nanoParticle->ed * ion[i].q * insum / ion[i].epsilon;
 
             insum = 0;
             for (k = 0; k < s.size(); k++)
                 insum += (s[k].normalvec * Grad(s[k].posvec, ion[i].posvec)) *
-                         ((-1) * 0.5 * nanoparticle.ed * (2 * nanoparticle.em - 1) * inner3Gather[k] +
-                          0.5 * nanoparticle.ed * nanoparticle.ed * inner4Gather[k] +
-                          nanoparticle.ed * nanoparticle.ed * inner5Gather[k]) * s[k].a;
+                         ((-1) * 0.5 * nanoParticle->ed * (2 * nanoParticle->em - 1) * inner3Gather[k] +
+                          0.5 * nanoParticle->ed * nanoParticle->ed * inner4Gather[k] +
+                          nanoParticle->ed * nanoParticle->ed * inner5Gather[k]) * s[k].a;
             fwEq_EqEq_EwEq = (ion[i].q / ion[i].epsilon) * insum;
 
             insum = 0;
@@ -152,8 +152,8 @@ double energy_functional(vector<VERTEX> &s, vector<PARTICLE> &ion, INTERFACE &na
                 ((ion[i].posvec - s[k].posvec).GetMagnitude());
             /*
             ion_energy[i-lowerBoundIons] = fqq + fwq + fqEq_qEw + fwEq_EqEq_EwEq +
-                            nanoparticle.bare_charge * ion[i].q * (1.0 / ion[i].epsilon) /
-                            ((ion[i].posvec - nanoparticle.posvec).GetMagnitude());*/
+                            nanoParticle->bare_charge * ion[i].q * (1.0 / ion[i].epsilon) /
+                            ((ion[i].posvec - nanoParticle->posvec).GetMagnitude());*/
 
             ion_energy[i-lowerBoundIons] = fqq + fwq + fqEq_qEw + fwEq_EqEq_EwEq + insum;
         }
@@ -187,8 +187,8 @@ double energy_functional(vector<VERTEX> &s, vector<PARTICLE> &ion, INTERFACE &na
                     insum += s[k].realQ * ion[i].q * (1.0 / ion[i].epsilon) /
                              ((ion[i].posvec - s[k].posvec).GetMagnitude());
 
-                //ion_energy[i-lowerBoundIons] = fqq + nanoparticle.bare_charge * ion[i].q * (1.0 / ion[i].epsilon) /
-                //                      ((ion[i].posvec - nanoparticle.posvec).GetMagnitude());
+                //ion_energy[i-lowerBoundIons] = fqq + nanoParticle->bare_charge * ion[i].q * (1.0 / ion[i].epsilon) /
+                //                      ((ion[i].posvec - nanoParticle->posvec).GetMagnitude());
 
                 ion_energy[i-lowerBoundIons] = fqq + insum;
             }
@@ -208,10 +208,10 @@ double energy_functional(vector<VERTEX> &s, vector<PARTICLE> &ion, INTERFACE &na
     // make a dummy particle with the same diameter as the ion just beneath the interface
 
     for (i = lowerBoundIons; i <= upperBoundIons; i++) {
-        if (ion[i].posvec.GetMagnitude() < nanoparticle.radius)
+        if (ion[i].posvec.GetMagnitude() < nanoParticle->radius)
             continue;
 
-        PARTICLE dummy = PARTICLE(0, ion[i].diameter, 0, 0, 0, nanoparticle.ein, ion[i].posvec ^ ((nanoparticle.radius -
+        PARTICLE dummy = PARTICLE(0, ion[i].diameter, 0, 0, 0, nanoParticle->ein, ion[i].posvec ^ ((nanoParticle->radius -
                                                                                                    0.5 *
                                                                                                    ion[i].diameter) /
                                                                                                   ion[i].posvec.GetMagnitude()));
@@ -253,8 +253,8 @@ double energy_functional(vector<VERTEX> &s, vector<PARTICLE> &ion, INTERFACE &na
     // make a dummy particle with the same diameter as the ion just above the simulation box
 
     for (i = lowerBoundIons; i <= upperBoundIons; i++) {
-        PARTICLE dummy = PARTICLE(0, ion[i].diameter, 0, 0, 0, nanoparticle.eout, ion[i].posvec ^
-                                                                                  ((nanoparticle.box_radius +
+        PARTICLE dummy = PARTICLE(0, ion[i].diameter, 0, 0, 0, nanoParticle->eout, ion[i].posvec ^
+                                                                                  ((nanoParticle->box_radius +
                                                                                     0.5 * ion[i].diameter) /
                                                                                    ion[i].posvec.GetMagnitude()));
         VECTOR3D r_vec = ion[i].posvec - dummy.posvec;
@@ -275,11 +275,11 @@ double energy_functional(vector<VERTEX> &s, vector<PARTICLE> &ion, INTERFACE &na
     // make a dummy particle with the same diameter as the ion just above the interface
 
     for (i = lowerBoundIons; i <= upperBoundIons; i++) {
-        if (ion[i].posvec.GetMagnitude() > nanoparticle.radius)
+        if (ion[i].posvec.GetMagnitude() > nanoParticle->radius)
             continue;
 
-        PARTICLE dummy = PARTICLE(0, ion[i].diameter, 0, 0, 0, nanoparticle.eout, ion[i].posvec ^
-                                                                                  ((nanoparticle.radius +
+        PARTICLE dummy = PARTICLE(0, ion[i].diameter, 0, 0, 0, nanoParticle->eout, ion[i].posvec ^
+                                                                                  ((nanoParticle->radius +
                                                                                     0.5 * ion[i].diameter) /
                                                                                    ion[i].posvec.GetMagnitude()));
         VECTOR3D r_vec = ion[i].posvec - dummy.posvec;

@@ -32,7 +32,8 @@
 #include <boost/program_options.hpp>
 #include "functions.h"
 #include "precalculations.h"
-#include "mpi_utility.h"
+#include "NanoParticleDisk.h"
+#include "NanoParticleSphere.h"
 
 //MPI boundary parameters
 unsigned int lowerBoundIons;
@@ -74,12 +75,14 @@ int main(int argc, char *argv[]) {
     unsigned int chain_length_real;
     unsigned int chain_length_fake;
     double box_radius;        // simulation box size, measured as radius in case of a sphere
-    double bin_width;        // width of the bins used to compute density profiles
+    double bin_width_R;        // width of the bins (in R direction) used to compute density profiles
+    double bin_width_Z;        // width of the bins (in Z direction) used to compute density profiles
     CONTROL fmdremote;        // remote control for fmd
     CONTROL cpmdremote;        // remote control for cpmd
 
+
     // Different parts of the system
-    INTERFACE nanoparticle;        // interface(s)
+    //INTERFACE nanoparticle;        // interface(s)
     vector<PARTICLE> counterion;    // counterions
     vector<PARTICLE> saltion_in;    // salt ions inside
     vector<PARTICLE> saltion_out;    // salt ions outside
@@ -87,7 +90,9 @@ int main(int argc, char *argv[]) {
     vector<VERTEX> s;        // all vertices
 
     // Analysis
-    vector<BIN> bin;        // bins
+    string np_shape; // np shape
+    NanoParticle *nanoParticle;
+    VECTOR3D np_pos(0, 0, 0);
 
     // Get input values from the user
     options_description desc("Usage:\nrandom_mesh <options>");
@@ -120,7 +125,8 @@ int main(int argc, char *argv[]) {
              "chain length for fake system: enter L+1 if you want L thermostats")
             ("box_radius,b", value<double>(&box_radius)->default_value(14.28),
              "simulation box radius")        // enter in nanometers
-            ("bin_width,B", value<double>(&bin_width)->default_value(0.025), "bin width")
+            ("bin_width_R,R", value<double>(&bin_width_R)->default_value(0.025), "bin width R")
+            ("bin_width_Z,B", value<double>(&bin_width_Z)->default_value(0.2), "bin width Z")
             ("anneal_fmd,A", value<char>(&fmdremote.anneal)->default_value('n'), "anneal in fmd on?")
             ("fmd_fake_mass,m", value<double>(&fmdremote.fakemass)->default_value(1.0), "fmd fake mass")
             ("cpmd_fake_mass,M", value<double>(&cpmdremote.fakemass)->default_value(1.0), "cpmd fake mass")
@@ -138,7 +144,9 @@ int main(int argc, char *argv[]) {
             ("cpmd_extra_compute,X", value<int>(&cpmdremote.extra_compute)->default_value(1000),
              "compute additional (cpmd)")
             ("cpmd_writedensity,W", value<int>(&cpmdremote.writedensity)->default_value(10000), "write density files")
-            ("verbose,I", value<bool>(&cpmdremote.verbose)->default_value(true),"verbose true: provides detailed output");
+            ("np_shape,G", value<string>(&np_shape)->default_value("Sphere"), "nanoparticle shape")
+            ("verbose,I", value<bool>(&cpmdremote.verbose)->default_value(true),
+             "verbose true: provides detailed output");
 
     variables_map vm;
     store(parse_command_line(argc, argv, desc), vm);
@@ -157,7 +165,7 @@ int main(int argc, char *argv[]) {
 #pragma omp parallel default(shared)
         {
             if (omp_get_thread_num() == 0) {
-                printf("The app comes with MPI and OpenMP (Hybrid) parallelization\n");
+                printf("The app comes with MPI and OpenMP (Hybrid) parallelization)\n");
                 printf("Number of MPI processes used %d\n", numOfNodes);
                 printf("Number of OpenMP threads per MPI process %d\n", omp_get_num_threads());
                 printf("Make sure that number of grid points / ions is greater than %d\n",
@@ -165,35 +173,59 @@ int main(int argc, char *argv[]) {
             }
         }
     }
+
+    //serve different NP for density bin
+    if (np_shape.compare("Sphere") == 0) {
+        //Sphere
+        vector<BinShell> bin_pos, bin_neg;
+        vector<double> sample_density_pos, sample_density_neg;
+        NanoParticleSphere np("Sphere", bin_pos, bin_neg, bin_width_R, ion, sample_density_pos, sample_density_neg, 0,
+                              0, cpmdremote,
+                              np_pos, radius / unitlength, ein, eout,
+                              nanoparticle_bare_charge);
+
+        nanoParticle = &np;
+
+    } else {
+        //disk
+        vector<vector<double> > density_pos, density_neg;
+        vector<vector<BinRing> > bin_disk_pos, bin_disk_neg;
+        NanoParticleDisk np("Disk", bin_disk_pos, bin_disk_neg, bin_width_R, bin_width_Z, ion, density_pos, density_neg,
+                            0, 0, cpmdremote,
+                            np_pos, radius / unitlength, ein, eout,
+                            nanoparticle_bare_charge);
+
+        nanoParticle = &np;
+
+    }
+
     // Set up the system
     real_T = 1;                                                            // set temperature
-    nanoparticle = INTERFACE(VECTOR3D(0, 0, 0), radius / unitlength, ein, eout,
-                             nanoparticle_bare_charge);                                // make interface
-    nanoparticle.set_up(salt_conc_in, salt_conc_out, salt_valency_in, salt_valency_out, total_gridpoints,
-                        box_radius / unitlength);    // set up properties inside and outside the interface
-    nanoparticle.put_counterions(counterion, counterion_valency, counterion_diameter,
-                                 ion);                    // put counterions	Note: ion contains all ions
-    nanoparticle.put_saltions_inside(saltion_in, salt_valency_in, salt_conc_in, saltion_diameter_in,
-                                     ion);                // put salt ions inside
-    nanoparticle.put_saltions_outside(saltion_out, salt_valency_out, salt_conc_out, saltion_diameter_out,
-                                      ion);            // put salt ions outside
-    nanoparticle.discretize(s);                                // discretize interface
+    // make interface
+    nanoParticle->set_up(salt_conc_in, salt_conc_out, salt_valency_in, salt_valency_out, total_gridpoints,
+                         box_radius / unitlength);    // set up properties inside and outside the interface
+    nanoParticle->put_counterions(counterion, counterion_valency, counterion_diameter,
+                                  ion);                    // put counterions	Note: ion contains all ions
+    nanoParticle->put_saltions_inside(saltion_in, salt_valency_in, salt_conc_in, saltion_diameter_in,
+                                      ion);                // put salt ions inside
+    nanoParticle->put_saltions_outside(saltion_out, salt_valency_out, salt_conc_out, saltion_diameter_out,
+                                       ion);            // put salt ions outside
+    nanoParticle->discretize(s);                                // discretize interface
 
     // if dielectric environment inside and outside NP are different, NPs get polarized
-    if (nanoparticle.ein == nanoparticle.eout)
-        nanoparticle.POLARIZED = false;
+    if (nanoParticle->ein == nanoParticle->eout)
+        nanoParticle->POLARIZED = false;
     else
-        nanoparticle.POLARIZED = true;
+        nanoParticle->POLARIZED = true;
 
-    if (world.rank() == 0)
-    {
-	if (nanoparticle.POLARIZED)
-        	cout << "NP is polarized " << endl;
-	else
-	    	cout << "NP is not polarized " << endl;
-    }	
+    if (world.rank() == 0) {
+        if (nanoParticle->POLARIZED)
+            cout << "NP is polarized " << endl;
+        else
+            cout << "NP is not polarized " << endl;
+    }
 
-    nanoparticle.RANDOMIZE_ION_FEATURES = false;
+    nanoParticle->RANDOMIZE_ION_FEATURES = false;
 
     // NOTE: sizing the arrays employed in precalculate functions
     for (unsigned int k = 0; k < s.size(); k++) {
@@ -206,55 +238,53 @@ int main(int argc, char *argv[]) {
     }
 
     // could only do precalculate if CPMD
-    if (nanoparticle.POLARIZED)
-        precalculate(s, nanoparticle);                                // precalculate
+    if (nanoParticle->POLARIZED)
+        precalculate(s, nanoParticle);                        // precalculate
 
-    for (unsigned int k = 0; k < s.size(); k++)                        // get polar coordinates for the vertices
+    for (unsigned int k = 0; k < s.size(); k++)               // get polar coordinates for the vertices
         s[k].get_polar();
-    make_bins(bin, nanoparticle,
-              bin_width);                            // set up bins to be used for computing density profiles
-    vector<double> initial_density;
-    bin_ions(ion, nanoparticle, initial_density,
-             bin);                        // bin the ions to get initial density profile
+
+    //make bins
+    nanoParticle->make_bins();
+
     if (world.rank() == 0) {
         // output to screen the parameters of the problem
         cout << "\n";
         if (cpmdremote.verbose)
-		cout << "Reduced units: scalefactor entering in Coloumb interaction is " << scalefactor << endl;
-        cout << "Units : length (cms) " << unitlength * pow(10.0, -7) << " | " << "energy (ergs) " << unitenergy
-             << " | " << "mass (g) " << unitmass << " | " << "time (s) " << unittime << endl;
-        cout << "Radius of the NP (nanosphere) " << nanoparticle.radius << endl;
-        cout << "Nanoparticle charge " << nanoparticle.bare_charge << endl;
-        cout << "Permittivity inside " << nanoparticle.ein << endl;
-        cout << "Permittivity outside " << nanoparticle.eout << endl;
+            cout << "Reduced units: scalefactor entering in Coloumb interaction is " << scalefactor << endl;
+        cout << "Units : length (cms) " << unitlength * pow(10.0, -7) << " | " << "energy(ergs) " << unitenergy
+             << " | " << "mass(g) " << unitmass << " | " << "time(s) " << unittime << endl;
+        cout << "Radius of the dielectric sphere (interface) " << nanoParticle->radius << endl;
+        cout << "Nanoparticle charge " << nanoParticle->bare_charge << endl;
+        cout << "Permittivity inside " << nanoParticle->ein << endl;
+        cout << "Permittivity outside " << nanoParticle->eout << endl;
         if (cpmdremote.verbose)
-	    cout << "Contrast strength " << 2 * (nanoparticle.eout - nanoparticle.ein) / (nanoparticle.eout + nanoparticle.ein)
-             << endl;
+            cout << "Contrast strength "
+                 << 2 * (nanoParticle->eout - nanoParticle->ein) / (nanoParticle->eout + nanoParticle->ein)
+                 << endl;
         cout << "Counterion valency " << counterion_valency << endl;
-	cout << "Counterion diameter " << counterion_diameter / unitlength << endl;
-        if (cpmdremote.verbose)
-	{
-		cout << "Salt ion valency inside " << salt_valency_in << endl;
-        	cout << "Salt ion valency outside " << salt_valency_out << endl;
-       		cout << "Salt ion diameter inside " << saltion_diameter_in / unitlength << endl;
-        	cout << "Salt ion diameter outside " << saltion_diameter_out / unitlength << endl;
-        	cout << "Salt concentration inside " << salt_conc_in << endl;
-        	cout << "Salt concentration outside " << salt_conc_out << endl;
-        	cout << "Debye length inside " << nanoparticle.inv_kappa_in << endl;
-        	cout << "Debye length outside " << nanoparticle.inv_kappa_out << endl;
-        	cout << "Mean separation inside " << nanoparticle.mean_sep_in << endl;
-        	cout << "Mean separation outside " << nanoparticle.mean_sep_out << endl;
-	}
-        cout << "Simulation box (spherical) radius " << nanoparticle.box_radius << endl;
+        if (cpmdremote.verbose) {
+            cout << "Salt ion valency inside " << salt_valency_in << endl;
+            cout << "Salt ion valency outside " << salt_valency_out << endl;
+            cout << "Counterion diameter " << counterion_diameter / unitlength << endl;
+            cout << "Salt ion diameter inside " << saltion_diameter_in / unitlength << endl;
+            cout << "Salt ion diameter outside " << saltion_diameter_out / unitlength << endl;
+            cout << "Salt concentration inside " << salt_conc_in << endl;
+            cout << "Salt concentration outside " << salt_conc_out << endl;
+            cout << "Debye length inside " << nanoParticle->inv_kappa_in << endl;
+            cout << "Debye length outside " << nanoParticle->inv_kappa_out << endl;
+            cout << "Mean separation inside " << nanoParticle->mean_sep_in << endl;
+            cout << "Mean separation outside " << nanoParticle->mean_sep_out << endl;
+        }
+        cout << "Simulation box (spherical) radius " << nanoParticle->box_radius << endl;
         cout << "Number of counterions " << counterion.size() << endl;
-        if (cpmdremote.verbose)
-	{
-	    cout << "Number of salt ions inside " << saltion_in.size() << endl;
-       	    cout << "Number of salt ions outside " << saltion_out.size() << endl;
+        if (cpmdremote.verbose) {
+            cout << "Number of salt ions inside " << saltion_in.size() << endl;
+            cout << "Number of salt ions outside " << saltion_out.size() << endl;
             cout << "Number of points discretizing the interface " << s.size() << endl;
-            cout << "Binning width (uniform) " << bin[0].width << endl;
-	}
-	cout << "Temperature (in units of energy/kB) " << real_T << endl;
+            //cout << "Binning width (uniform) " << bin_disk[0][0].width_R << endl;
+            nanoParticle->printBinSize();
+        }
     }
     // write to files
     // initial configuration
@@ -263,16 +293,13 @@ int main(int argc, char *argv[]) {
         initial_configuration << "ion" << setw(5) << ion[i].id << setw(15) << "charge" << setw(5) << ion[i].q
                               << setw(15) << "position" << setw(15) << ion[i].posvec << endl;
     initial_configuration.close();
-    // initial density
-    ofstream density_profile("outfiles/initial_density_profile.dat", ios::out);
-    for (unsigned int b = 0; b < initial_density.size(); b++)
-        density_profile << b * bin[b].width << setw(15) << initial_density.at(b) << endl;
-    density_profile.close();
 
+    // initial density
+    nanoParticle->compute_initial_density_profile();
 
     // some calculations before simulation begins
     if (world.rank() == 0)
-        cout << "Total charge inside the sphere " << nanoparticle.total_charge_inside(ion) << endl;
+        cout << "Total charge inside the sphere " << nanoParticle->total_charge_inside(ion) << endl;
 
     // NEW NOTE : resizing the member arrays Gion and gradGion to store dynamic precalculations in fmd and cpmd force routines
     for (unsigned int k = 0; k < s.size(); k++) {
@@ -310,23 +337,28 @@ int main(int argc, char *argv[]) {
         upperBoundMesh = s.size() - 1;
     }
 
+    for (unsigned int k = 0; k < s.size(); k++) {
+        s[k].w = 0.0;                                // Initialize fake degree value		(unconstrained)
+        s[k].wmean = 0.0;
+    }
 
     // Fictitious molecular dynamics
-    if (nanoparticle.POLARIZED)
-    {
-	    if (world.rank() == 0)
-	    	cout << "Polarized charges detected; simulation will proceed using dynamical optimization framework (CPMD)" << endl;
-	    fmd(s, ion, nanoparticle, fmdremote, cpmdremote);
-    }
-    else if (world.rank() == 0)
-        cout << "No polarized charges detected; simulation will proceed using simple MD" << endl;
+    if (nanoParticle->POLARIZED) {
+        if (world.rank() == 0)
+            cout << "Polarized charges detected; simulation will proceed using dynamical optimization framework (CPMD)"
+                 << endl;
+        fmd(s, ion, nanoParticle, fmdremote, cpmdremote);
+    } else if (world.rank() == 0)
+        cout << "no induced charges; simulation will proceed using simple MD" << endl;
 
-    // result of fmd
-    ofstream induced_density("outfiles/induced_density.dat");
-    for (unsigned int k = 0; k < s.size(); k++)
-        induced_density << k + 1 << setw(15) << s[k].theta << setw(15) << s[k].phi << setw(15) << s[k].w << setw(15)
-                        << s[k].wmean << endl;
-    induced_density.close();
+    if (world.rank() == 0) {
+        // result of fmd
+        ofstream induced_density("outfiles/induced_density.dat");
+        for (unsigned int k = 0; k < s.size(); k++)
+            induced_density << k + 1 << setw(15) << s[k].theta << setw(15) << s[k].phi << setw(15) << s[k].w << setw(15)
+                            << s[k].wmean << endl;
+        induced_density.close();
+    }
 
     // prepare for cpmd : make real and fake baths
 
@@ -342,7 +374,7 @@ int main(int argc, char *argv[]) {
     }
 
     vector<THERMOSTAT> fake_bath;
-    if (!nanoparticle.POLARIZED)
+    if (!nanoParticle->POLARIZED)
         fake_T = 0;
 //K is used for thermostat fake_T is k
     if (chain_length_fake == 1)
@@ -359,17 +391,17 @@ int main(int argc, char *argv[]) {
         cout << "Number of chains for fake system" << setw(3) << fake_bath.size() - 1 << endl;
     }
     // Car-Parrinello Molecular Dynamics
-    cpmd(ion, s, nanoparticle, real_bath, fake_bath, bin, fmdremote, cpmdremote);
+    cpmd(ion, s, nanoParticle, real_bath, fake_bath, fmdremote, cpmdremote);
 
     if (world.rank() == 0) {
         // Post simulation analysis (useful for short runs, but performed otherwise too)
         if (cpmdremote.verbose)
-	    cout << "MD trust factor R (should be < 0.05) is " << compute_MD_trust_factor_R(cpmdremote.hiteqm) << endl;
-        if (nanoparticle.POLARIZED && cpmdremote.verbose)
+            cout << "MD trust factor R (should be < 0.05) is " << compute_MD_trust_factor_R(cpmdremote.hiteqm) << endl;
+        if (nanoParticle->POLARIZED && cpmdremote.verbose)
             cout << "MD trust factor RV (should be < 0.15) is " << compute_MD_trust_factor_R_v(cpmdremote.hiteqm)
                  << endl;
         //auto_correlation_function();
-        cout << "Simulation ends" << endl;
+        cout << "Program ends" << endl;
         cout << endl;
     }
     return 0;
