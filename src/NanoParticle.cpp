@@ -305,8 +305,8 @@ void NanoParticle::compute_effective_charge(int &num, vector<int> &condensedIons
     int condensedCountThisStep = 0;
     //  Assess number of condensed ions this step, add it to global list for all steps (after equilibrium):
     for (unsigned int i = 0; i < ion.size(); i++)
-        if(ion[i].electrostaticPE <= -1*((4.0/3.0)*ion[i].ke)) condensedCountThisStep++;
-        //if(ion[i].electrostaticPE <= -1*((4.0/3.0)*1.5)) condensedCountThisStep++;
+        //if(ion[i].electrostaticPE <= -1*((4.0/3.0)*ion[i].ke)) condensedCountThisStep++;  // ion-specific method
+        if(ion[i].electrostaticPE <= -1*((4.0/3.0)*1.5)) condensedCountThisStep++;          // avg KE method
 
     condensedIonsPerStep.push_back(condensedCountThisStep);
 
