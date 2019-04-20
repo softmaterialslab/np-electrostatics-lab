@@ -2,6 +2,8 @@
 
 #include "functions.h"
 
+extern vector<int> condensedIonsPerStep;
+
 void cpmd(vector <PARTICLE> &ion, vector <VERTEX> &s, NanoParticle *nanoParticle, vector <THERMOSTAT> &real_bath,
           vector <THERMOSTAT> &fake_bath, CONTROL &fmdremote, CONTROL &cpmdremote) {
 
@@ -68,6 +70,9 @@ void cpmd(vector <PARTICLE> &ion, vector <VERTEX> &s, NanoParticle *nanoParticle
     long double expfac_real, expfac_fake;            // exponential factors pre-computed, useful in velocity Verlet update routine
 
     double percentage = 0, percentagePre = -1;
+
+    // Output the zeroth timestep in a movie:
+    make_movie(0, ion, nanoParticle);
 
     // Part II : Propagate
     for (int num = 1; num <= cpmdremote.steps; num++) {
@@ -173,15 +178,32 @@ void cpmd(vector <PARTICLE> &ion, vector <VERTEX> &s, NanoParticle *nanoParticle
             nanoParticle->updateSamples(density_profile_samples);
             nanoParticle->updateStep(num);
             nanoParticle->compute_density_profile();
-
+            energy_functional(s, ion, nanoParticle);  // Assess the PE (specifically ES component for Diehl's)
+            nanoParticle->compute_effective_charge(num, condensedIonsPerStep, ion, nanoParticle, cpmdremote);
         }
         //percentage calculation
-        percentage = roundf(num / (double) cpmdremote.steps * 100 * 10) / 10;
-        //percentage output
-        if (percentage != percentagePre) {
-            double fraction_completed = percentage / 100;
-            progressBar(fraction_completed);
-            percentagePre = percentage;
+        if (world.rank() == 0)
+        {
+            //percentage calculation
+            if(!cpmdremote.verbose)
+                percentage=roundf(num/(double)cpmdremote.steps*100);
+            else
+                percentage=roundf(num/(double)cpmdremote.steps*100 * 10) / 10;
+            //percentage output
+            if(percentage!=percentagePre)
+            {
+                if(!cpmdremote.verbose)
+                {
+                    int progressBarVal=(int) (percentage+0.5);
+                    printf("=PROGRESS=>%d\n",progressBarVal);
+                }else
+                {
+                    double fraction_completed = percentage/100;
+                    progressBar(fraction_completed);
+                }
+                percentagePre=percentage;
+
+            }
         }
     }
 
@@ -197,7 +219,7 @@ void cpmd(vector <PARTICLE> &ion, vector <VERTEX> &s, NanoParticle *nanoParticle
         final_configuration << ion[i].posvec << endl;
     if (world.rank() == 0 && cpmdremote.verbose) {
         cout << "Number of samples used to compute energy" << setw(10) << energy_samples << endl;
-        cout << "Number of samples used to get density profile" << setw(10) << density_profile_samples << endl;
+        cout << "Number of samples used to get density profile, effective charge" << setw(10) << density_profile_samples << endl;
         if (nanoParticle->POLARIZED)
             cout << "Number of samples used to verify on the fly results" << setw(10) << verification_samples << endl;
         if (nanoParticle->POLARIZED)

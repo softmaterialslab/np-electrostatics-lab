@@ -54,5 +54,6 @@ public:
     //print number of bins used
     void printBinSize() ;
 
+
 };
 

@@ -300,6 +300,38 @@ double NanoParticle::set_surface_area_np(double radius){
 
 }
 
+void NanoParticle::compute_effective_charge(int &num, vector<int> &condensedIonsPerStep, vector<PARTICLE> &ion, NanoParticle *nanoParticle, CONTROL &cpmdremote){
+
+    int condensedCountThisStep = 0;
+    //  Assess number of condensed ions this step, add it to global list for all steps (after equilibrium):
+    for (unsigned int i = 0; i < ion.size(); i++)
+        if(ion[i].electrostaticPE <= -1*((4.0/3.0)*ion[i].ke)) condensedCountThisStep++;
+        //if(ion[i].electrostaticPE <= -1*((4.0/3.0)*1.5)) condensedCountThisStep++;
+
+    condensedIonsPerStep.push_back(condensedCountThisStep);
+
+    // Output a file with the number for each step interval (extra information), report alpha & Z_eff using the mean:
+    if(num == cpmdremote.steps)    {
+        ofstream condensed_ion_kinetics("outfiles/condensed_ion_kinetics.dat", ios::out);
+        for (unsigned int i = 0; i < condensedIonsPerStep.size(); i++){
+            condensed_ion_kinetics << cpmdremote.hiteqm + cpmdremote.freq*i  << "\t" << condensedIonsPerStep[i] << endl;
+        }
+        condensed_ion_kinetics.close();
+
+        //  Compute the time-average number of condensed ions:
+        double mean_Condensed_Ion_Count = 0;
+        for (unsigned int i = 0; i < condensedIonsPerStep.size(); i++)
+            mean_Condensed_Ion_Count += (condensedIonsPerStep[i]/(double)condensedIonsPerStep.size());
+
+        //  Compute the final nanoparticle effective charge (assumes counterion valency set by first ion in list):
+        nanoParticle->effective_charge = nanoParticle->bare_charge + ion[0].valency*mean_Condensed_Ion_Count;
+        cout << endl << "\n\tBy Diehl's Method, condensation fraction (alpha) is: " << (ion[0].valency*mean_Condensed_Ion_Count)/nanoParticle->bare_charge << endl;
+        cout << "\tUsing this, the nanoparticle's effective charge is: " << nanoParticle->effective_charge << endl;
+        cout << "\tCondensation kinetics have been output for every interval after the estimated equilibrium step." << endl << endl;
+    }
+}
+
+
 
 
 
