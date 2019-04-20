@@ -165,7 +165,7 @@ void make_movie(int num, vector<PARTICLE> &ion, NanoParticle *nanoParticle) {
         outdump << -nanoParticle->box_radius << "\t" << nanoParticle->box_radius << endl;
         outdump << -nanoParticle->box_radius << "\t" << nanoParticle->box_radius << endl;
         outdump << -nanoParticle->box_radius << "\t" << nanoParticle->box_radius << endl;
-        outdump << "ITEM: ATOMS index type x y z" << endl;
+        outdump << "ITEM: ATOMS index type x y z ES KE" << endl;
         string type;
         for (unsigned int i = 0; i < ion.size(); i++) {
             if (ion[i].valency > 0)
@@ -173,7 +173,8 @@ void make_movie(int num, vector<PARTICLE> &ion, NanoParticle *nanoParticle) {
             else
                 type = "-1";
             outdump << setw(6) << i << "\t" << type << "\t" << setw(8) << ion[i].posvec.x << "\t" << setw(8)
-                    << ion[i].posvec.y << "\t" << setw(8) << ion[i].posvec.z << endl;
+                    << ion[i].posvec.y << "\t" << setw(8) << ion[i].posvec.z << "\t" << ion[i].electrostaticPE
+                    << "\t" << ion[i].ke << endl;
         }
         outdump.close();
     }

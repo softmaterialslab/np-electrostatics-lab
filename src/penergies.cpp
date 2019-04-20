@@ -167,6 +167,10 @@ double energy_functional(vector<VERTEX> &s, vector<PARTICLE> &ion, NanoParticle 
         for (k = 0; k < ind_energy.size(); k++)
             ind_ind = ind_ind + ind_energy[k];
 
+        //  Assess the electrostatic component of the PE for each ion (for use in Diehl's Method):
+        for(unsigned int i = 0; i < ion_energy.size(); i++)
+            ion[i].electrostaticPE = scalefactor * ion_energy[i];
+
         // electrostatic potential energy
         potential = (ion_ion + ind_ind) * scalefactor;
     } else    // if not POLARIZED
@@ -193,6 +197,9 @@ double energy_functional(vector<VERTEX> &s, vector<PARTICLE> &ion, NanoParticle 
                 ion_energy[i-lowerBoundIons] = fqq + insum;
             }
 
+        //  Assess the electrostatic component of the PE for each ion (for use in Diehl's Method):
+        for(unsigned int i = 0; i < ion_energy.size(); i++)
+            ion[i].electrostaticPE = scalefactor * ion_energy[i];
 
         double ion_ion = 0;
         for (unsigned int i = 0; i < ion_energy.size(); i++)

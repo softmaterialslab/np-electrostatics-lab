@@ -25,6 +25,7 @@ class PARTICLE
       ar & velvec;
       ar & forvec;
       ar & pe;
+      ar & electrostaticPE;
       ar & ke;
       ar & energy;
     }
@@ -42,6 +43,7 @@ class PARTICLE
   VECTOR3D velvec;	// velocity vector of the particle
   VECTOR3D forvec;	// force vector on the particle
   double pe;		// potential energy
+  double electrostaticPE;  // the ES component of the PE
   long double ke;	// kinetic energy
   double energy;	// energy
   

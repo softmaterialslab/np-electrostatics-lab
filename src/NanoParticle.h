@@ -65,6 +65,7 @@ public:
     double mean_sep_out;        // mean separation outside
     int number_of_vertices;    // number of points used to discretize the interface
     double bare_charge;        // bare charge on the membrane (interface)
+    double effective_charge;    // effective charge after ion condensation, salt adduction
     double area_np;        // area of the nano particle
     bool POLARIZED;        // is the nanoparticle polarized; depends on ein, eout
     bool RANDOMIZE_ION_FEATURES;    // are selections randomized
@@ -106,6 +107,9 @@ public:
 
     // compute density profile
     virtual void compute_density_profile();
+
+    // compute effective charge
+    virtual void compute_effective_charge(int &, vector<int> &, vector<PARTICLE> &, NanoParticle *, CONTROL &);
 
     // compute final density profile
     virtual void compute_final_density_profile();

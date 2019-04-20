@@ -47,6 +47,7 @@ unsigned int extraElementsMesh;
 mpi::environment env;
 mpi::communicator world;
 
+vector<int> condensedIonsPerStep; // Number of condensed ions per step (after equilibrium) at specified frequency
 
 using namespace boost::program_options;
 
@@ -204,12 +205,22 @@ int main(int argc, char *argv[]) {
     // make interface
     nanoParticle->set_up(salt_conc_in, salt_conc_out, salt_valency_in, salt_valency_out, total_gridpoints,
                          box_radius / unitlength);    // set up properties inside and outside the interface
-    nanoParticle->put_counterions(counterion, counterion_valency, counterion_diameter,
-                                  ion);                    // put counterions	Note: ion contains all ions
-    nanoParticle->put_saltions_inside(saltion_in, salt_valency_in, salt_conc_in, saltion_diameter_in,
-                                      ion);                // put salt ions inside
-    nanoParticle->put_saltions_outside(saltion_out, salt_valency_out, salt_conc_out, saltion_diameter_out,
-                                       ion);            // put salt ions outside
+
+    // If running a standard simulation (charged particle and/or with salt) populate the ions:
+    if (abs(nanoparticle_bare_charge) > 0)
+        nanoParticle->put_counterions(counterion, counterion_valency, counterion_diameter, ion);                    // put counterions	Note: ion contains all ions
+    if (salt_conc_in > 0)
+        nanoParticle->put_saltions_inside(saltion_in, salt_valency_in, salt_conc_in, saltion_diameter_in, ion);                // put salt ions inside
+    if (salt_conc_out > 0)
+        nanoParticle->put_saltions_outside(saltion_out, salt_valency_out, salt_conc_out, saltion_diameter_out, ion);            // put salt ions outside
+
+    //  If the charge is set to zero (for testing), insert test two test ions at chosen positions:
+    /*if (nanoparticle_bare_charge == 0)
+    {
+        ion.push_back(PARTICLE(int(ion.size()) + 1, counterion_diameter, counterion_valency, counterion_valency * 1.0, 1.0, eout, VECTOR3D(45,0,0)));
+        ion.push_back(PARTICLE(int(ion.size()) + 1, counterion_diameter, counterion_valency, counterion_valency * 1.0, 1.0, eout, VECTOR3D(46,0,0)));
+    }*/
+
     nanoParticle->discretize(s);                                // discretize interface
 
     // if dielectric environment inside and outside NP are different, NPs get polarized
@@ -289,9 +300,10 @@ int main(int argc, char *argv[]) {
     // write to files
     // initial configuration
     ofstream initial_configuration("outfiles/initialconfig.dat");
-    for (unsigned int i = 0; i < ion.size(); i++)
-        initial_configuration << "ion" << setw(5) << ion[i].id << setw(15) << "charge" << setw(5) << ion[i].q
-                              << setw(15) << "position" << setw(15) << ion[i].posvec << endl;
+    if (world.rank() == 0)
+        for (unsigned int i = 0; i < ion.size(); i++)
+            initial_configuration << "ion" << setw(5) << ion[i].id << setw(15) << "charge" << setw(5) << ion[i].q
+                                  << setw(15) << "position" << setw(15) << ion[i].posvec << endl;
     initial_configuration.close();
 
     // initial density
@@ -351,15 +363,14 @@ int main(int argc, char *argv[]) {
     } else if (world.rank() == 0)
         cout << "no induced charges; simulation will proceed using simple MD" << endl;
 
-    if (world.rank() == 0) {
+    ofstream induced_density("outfiles/induced_density.dat");
+    if (world.rank() == 0)
         // result of fmd
-        ofstream induced_density("outfiles/induced_density.dat");
         for (unsigned int k = 0; k < s.size(); k++)
             induced_density << k + 1 << setw(15) << s[k].theta << setw(15) << s[k].phi << setw(15) << s[k].w << setw(15)
                             << s[k].wmean << endl;
-        induced_density.close();
-    }
 
+    induced_density.close();
     // prepare for cpmd : make real and fake baths
 
     vector<THERMOSTAT> real_bath;
@@ -390,6 +401,7 @@ int main(int argc, char *argv[]) {
         cout << "Number of chains for real system" << setw(3) << real_bath.size() - 1 << endl;
         cout << "Number of chains for fake system" << setw(3) << fake_bath.size() - 1 << endl;
     }
+
     // Car-Parrinello Molecular Dynamics
     cpmd(ion, s, nanoParticle, real_bath, fake_bath, fmdremote, cpmdremote);
 
