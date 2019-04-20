@@ -137,7 +137,7 @@ int main(int argc, char *argv[]) {
             ("cpmd_steps,S", value<int>(&cpmdremote.steps)->default_value(50000), "steps used in cpmd")
             ("fmd_eqm,p", value<int>(&fmdremote.hiteqm)->default_value(100), "production begin (fmd)")
             ("cpmd_eqm,P", value<int>(&cpmdremote.hiteqm)->default_value(10000), "production begin (cpmd)")
-            ("fmd_freq,f", value<int>(&fmdremote.freq)->default_value(100), "sample frequency (fmd)")
+            ("fmd_freq,f", value<int>(&fmdremote.freq)->default_value(10), "sample frequency (fmd)")
             ("cpmd_freq,F", value<int>(&cpmdremote.freq)->default_value(100), "sample frequency (cpmd)")
             ("fmd_verify,y", value<int>(&fmdremote.verify)->default_value(0), "verify (fmd)")
             ("cpmd_verify,Y", value<int>(&cpmdremote.verify)->default_value(10000), "verify (cpmd)")
