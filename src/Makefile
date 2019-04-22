@@ -26,16 +26,19 @@ OBJ = main.o NanoParticle.o NanoParticleSphere.o NanoParticleDisk.o functions.o 
 all: $(PROG)
 
 install: create-dirs
-	. /etc/environ.sh; use -e -r boost-1.62.0-mpich2-1.3-gnu-4.7.2; make CCF=nanoHUB all
 	@echo "compiling the np_electrostatics code on Nanohub"
-		
+	. /etc/environ.sh; use -e -r boost-1.62.0-mpich2-1.3-gnu-4.7.2; make CCF=nanoHUB all
+	cp -f $(BASE)/$(PROG) $(BIN)
+			
 local-install: create-dirs
-	make CCF=LOCAL all
 	@echo "compiling the np_electrostatics code in local computer"
-
+	make CCF=LOCAL all
+	cp -f $(BASE)/$(PROG) $(BIN)
+	
 cluster-install: create-dirs
-	module swap PrgEnv-cray PrgEnv-gnu && module load boost/1.65.0 && module load gsl; make CCF=BigRed2 all
 	@echo "compiling the np_electrostatics code on BIGRED 2"
+	module swap PrgEnv-cray PrgEnv-gnu && module load boost/1.65.0 && module load gsl; make CCF=BigRed2 all
+	cp -f $(BASE)/$(PROG) $(BIN)	
 
 create-dirs:
 	@echo "Checking and creating needed sub-directories in the $(BIN) directory"
