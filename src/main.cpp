@@ -221,7 +221,7 @@ int main(int argc, char *argv[]) {
         ion.push_back(PARTICLE(int(ion.size()) + 1, counterion_diameter, counterion_valency, counterion_valency * 1.0, 1.0, eout, VECTOR3D(46,0,0)));
     }*/
 
-    nanoParticle->discretize(s);                                // discretize interface
+    nanoParticle->discretize(s,radius / unitlength);                                // discretize interface
 
     // if dielectric environment inside and outside NP are different, NPs get polarized
     if (nanoParticle->ein == nanoParticle->eout)
