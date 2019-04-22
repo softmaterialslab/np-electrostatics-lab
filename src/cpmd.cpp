@@ -205,6 +205,7 @@ void cpmd(vector <PARTICLE> &ion, vector <VERTEX> &s, NanoParticle *nanoParticle
 
             }
         }
+
     }
 
     // Part III : Analysis
