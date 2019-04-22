@@ -2,6 +2,8 @@
 # This makes a parallel simulation for different dielectric problem
 # Use option -p in CC for profiling with gprof
 
+BIN = ../bin
+
 # nanoHUB flags. 
 nanoHUBCC = mpicxx -O3 -g -Wall -fopenmp -std=c++11 -Wunused-variable -Wunknown-pragmas
 nanoHUBLFLAG = -lgsl -lgslcblas -lm -L${BOOST_LIBDIR} -lboost_program_options -lboost_mpi -lboost_serialization
@@ -21,17 +23,29 @@ OFLAG = -o
 PROG = np_electrostatics_lab
 OBJ = main.o NanoParticle.o NanoParticleSphere.o NanoParticleDisk.o functions.o parallel_precal.o pfmdforces.o pcpmdforces.o penergies.o fmd.o cpmd.o BinRing.o BinShell.o
 
+create-dirs:
+	@echo "Checking and creating needed sub-directories in the $(BIN) directory"
+	if ! [ -d $(BIN) ]; then mkdir $(BIN); fi
+	if ! [ -d $(BIN)/outfiles ]; then mkdir $(BIN)/outfiles; fi
+	if ! [ -d $(BIN)/datafiles ]; then mkdir $(BIN)/datafiles; fi
+	if ! [ -d $(BIN)/verifiles ]; then mkdir $(BIN)/verifiles; fi
+	if ! [ -d $(BIN)/computedfiles ]; then mkdir $(BIN)/computedfiles; fi
+	@echo "Directory creation is over."
+
 all: $(PROG)
 
-install: all
-	@echo "compiling the np_electrostatics code in local computer"
-
-nanoHUB-install:
+install:
 	. /etc/environ.sh; use -e -r boost-1.62.0-mpich2-1.3-gnu-4.7.2; make CCF=nanoHUB all
+	create-dirs
 	@echo "compiling the np_electrostatics code on Nanohub"
+
+local-install: all
+	create-dirs
+	@echo "compiling the np_electrostatics code in local computer"
 
 cluster-install:
 	module swap PrgEnv-cray PrgEnv-gnu && module load boost/1.65.0 && module load gsl; make CCF=BigRed2 all
+	create-dirs
 	@echo "compiling the np_electrostatics code on BIGRED 2"
 
 $(PROG) : $(OBJ)
@@ -48,3 +62,16 @@ else
 %.o : %.cpp
 	$(CC) -c $(CFLAG) $< -o $@	
 endif
+
+clean:
+	rm -f *.o
+	rm -f $(PROG)
+	rm -f $(BIN)/$(PROG)
+
+dataclean:
+	rm -f $(BIN)/outfiles/*.dat $(BIN)/outfiles/*.xyz  $(BIN)/outfiles/*.lammpstrj  $(BIN)/datafiles/*.dat verifiles/*.dat $(BIN)/computedfiles/*.dat
+	rm -f $(BIN)/*.log
+	rm -f $(BIN)/*.pbs
+
+distclean: clean
+	rm -f $(BIN)/$(PROG)
