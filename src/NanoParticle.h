@@ -84,7 +84,7 @@ public:
 
     void put_saltions_outside(vector<PARTICLE> &, int, double, double, vector<PARTICLE> &);
 
-    void discretize(vector<VERTEX> &);
+    void discretize(vector<VERTEX> &, double);
 
     // total charge inside
     double total_charge_inside(vector<PARTICLE> &);

@@ -241,17 +241,15 @@ void NanoParticle::put_saltions_outside(vector<PARTICLE> &saltion_out, int valen
 }
 
 // discretize interface
-void NanoParticle::discretize(vector<VERTEX> &s) {
+void NanoParticle::discretize(vector<VERTEX> &s, double radius) {
 
-    //for the disk temp change. : infiles_a10_disk  | infiles_a7.5
     char filename[200];
-    // change infiles folder if nanoparticle radius changes; for a = 2.67m nm = 7.5 sigma in reduced units, infiles_a7.5 is the folder
 
     if(shape_id == 0){
-        sprintf(filename, "infiles_a7.5/grid%d.dat",
+        sprintf(filename, "infiles_a1/grid%d.dat",
                 number_of_vertices);
     }else{
-        sprintf(filename, "infiles_a7.5_disk/grid%d.dat",
+        sprintf(filename, "infiles_a1_disk/grid%d.dat",
                 number_of_vertices);
     }
 
@@ -265,7 +263,7 @@ void NanoParticle::discretize(vector<VERTEX> &s) {
     unsigned int col1;
     double col2, col3, col4, col5, col6, col7, col8;
     while (in >> col1 >> col2 >> col3 >> col4 >> col5 >> col6 >> col7 >> col8)
-        s.push_back(VERTEX(VECTOR3D(col2, col3, col4), col5, VECTOR3D(col6, col7, col8), area_np, bare_charge));
+        s.push_back(VERTEX(VECTOR3D(radius * col2, radius * col3, radius * col4), radius * radius * col5, VECTOR3D(col6, col7, col8), area_np, bare_charge));
 
     if (world.rank() == 0) {
         ofstream listvertices("outfiles/interface.xyz", ios::out);
