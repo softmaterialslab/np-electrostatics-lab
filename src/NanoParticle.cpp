@@ -249,7 +249,7 @@ void NanoParticle::discretize(vector<VERTEX> &s, double radius) {
         sprintf(filename, "infiles_a1/grid%d.dat",
                 number_of_vertices);
     }else{
-        sprintf(filename, "infiles_a1/grid%d.dat",
+        sprintf(filename, "infiles_a1_disk/grid%d.dat",
                 number_of_vertices);
     }
 
