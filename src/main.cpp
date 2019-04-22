@@ -217,8 +217,8 @@ int main(int argc, char *argv[]) {
     //  If the charge is set to zero (for testing), insert test two test ions at chosen positions:
     /*if (nanoparticle_bare_charge == 0)
     {
-        ion.push_back(PARTICLE(int(ion.size()) + 1, counterion_diameter, counterion_valency, counterion_valency * 1.0, 1.0, eout, VECTOR3D(45,0,0)));
-        ion.push_back(PARTICLE(int(ion.size()) + 1, counterion_diameter, counterion_valency, counterion_valency * 1.0, 1.0, eout, VECTOR3D(46,0,0)));
+        ion.push_back(PARTICLE(int(ion.size()) + 1, counterion_diameter, counterion_valency, counterion_valency * 1.0, 1.0, eout, VECTOR3D(5 / unitlength,0,0)));
+        ion.push_back(PARTICLE(int(ion.size()) + 1, counterion_diameter, counterion_valency, counterion_valency * 1.0, 1.0, eout, VECTOR3D(6 / unitlength,0,0)));
     }*/
 
     nanoParticle->discretize(s,radius / unitlength);                                // discretize interface
