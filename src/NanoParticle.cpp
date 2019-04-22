@@ -243,9 +243,7 @@ void NanoParticle::put_saltions_outside(vector<PARTICLE> &saltion_out, int valen
 // discretize interface
 void NanoParticle::discretize(vector<VERTEX> &s, double radius) {
 
-    //for the disk temp change. : infiles_a10_disk  | infiles_a7.5
     char filename[200];
-    // change infiles folder if nanoparticle radius changes; for a = 2.67m nm = 7.5 sigma in reduced units, infiles_a7.5 is the folder
 
     if(shape_id == 0){
         sprintf(filename, "infiles_a1/grid%d.dat",
