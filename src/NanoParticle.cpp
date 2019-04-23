@@ -323,7 +323,7 @@ void NanoParticle::compute_effective_charge(int &num, vector<int> &condensedIons
 
         //  Compute the final nanoparticle effective charge (assumes counterion valency set by first ion in list):
         nanoParticle->effective_charge = nanoParticle->bare_charge + ion[0].valency*mean_Condensed_Ion_Count;
-        cout << endl << "\n\tBy Diehl's Method, condensation fraction (alpha) is: " << (ion[0].valency*mean_Condensed_Ion_Count)/nanoParticle->bare_charge << endl;
+        cout << endl << "\n\tBy Diehl's Method, condensation fraction (alpha) is: " << (mean_Condensed_Ion_Count / ion.size()) << endl;
         cout << "\tUsing this, the nanoparticle's effective charge is: " << nanoParticle->effective_charge << endl;
         cout << "\tCondensation kinetics have been output for every interval after the estimated equilibrium step." << endl << endl;
     }
