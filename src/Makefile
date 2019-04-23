@@ -67,7 +67,6 @@ endif
 clean:
 	rm -f *.o
 	rm -f $(PROG)
-	rm -f $(BIN)/$(PROG)
 
 dataclean:
 	rm -f $(BIN)/outfiles/*.dat $(BIN)/outfiles/*.xyz  $(BIN)/outfiles/*.lammpstrj  $(BIN)/datafiles/*.dat verifiles/*.dat $(BIN)/computedfiles/*.dat

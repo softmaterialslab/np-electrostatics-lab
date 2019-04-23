@@ -13,3 +13,6 @@
 ```make cluster-submit```
 * All outputs from the simulation will be stored in the data folder when the simulation is completed.
 
+## NanoHUB app page:
+* https://nanohub.org/tools/nselectrostatic/
+
