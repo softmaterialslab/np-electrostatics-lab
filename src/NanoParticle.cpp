@@ -311,11 +311,12 @@ void NanoParticle::compute_effective_charge(int &num, vector<int> &condensedIons
     // Output a file with the number for each step interval (extra information), report alpha & Z_eff using the mean:
     if(num == cpmdremote.steps)    {
         ofstream condensed_ion_kinetics("outfiles/condensed_ion_kinetics.dat", ios::out);
-        for (unsigned int i = 0; i < condensedIonsPerStep.size(); i++){
-            condensed_ion_kinetics << cpmdremote.hiteqm + cpmdremote.freq*i  << "\t" << condensedIonsPerStep[i] << endl;
+        if (world.rank() == 0) {
+            for (unsigned int i = 0; i < condensedIonsPerStep.size(); i++){
+              condensed_ion_kinetics << cpmdremote.hiteqm + cpmdremote.freq*i  << "\t" << condensedIonsPerStep[i] << endl;
+            } 
         }
         condensed_ion_kinetics.close();
-
         //  Compute the time-average number of condensed ions:
         double mean_Condensed_Ion_Count = 0;
         for (unsigned int i = 0; i < condensedIonsPerStep.size(); i++)
