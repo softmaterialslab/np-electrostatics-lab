@@ -245,12 +245,14 @@ void NanoParticle::discretize(vector<VERTEX> &s, double radius) {
 
     char filename[200];
 
+
+    //change infiles folder if nanoparticle radius changes; for a = 2.67m nm = 7.5 sigma in reduced units, infiles_a7.5 is the folder
     if(shape_id == 0){
-        sprintf(filename, "infiles_a1/grid%d.dat",
-                number_of_vertices);
+        sprintf(filename, "infiles_a%.1f/grid%d.dat",
+                radius, number_of_vertices);
     }else{
-        sprintf(filename, "infiles_a1_disk/grid%d.dat",
-                number_of_vertices);
+        sprintf(filename, "infiles_a%.1f_disk/grid%d.dat",
+                radius, number_of_vertices);
     }
 
     ifstream in(filename, ios::in);

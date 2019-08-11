@@ -189,6 +189,7 @@ int main(int argc, char *argv[]) {
 
     } else {
         //disk
+
         vector<vector<double> > density_pos, density_neg;
         vector<vector<BinRing> > bin_disk_pos, bin_disk_neg;
         NanoParticleDisk np("Disk", bin_disk_pos, bin_disk_neg, bin_width_R, bin_width_Z, ion, density_pos, density_neg,
@@ -201,7 +202,9 @@ int main(int argc, char *argv[]) {
     }
 
     // Set up the system
-    real_T = 1;                                                            // set temperature
+    real_T = 1;
+
+    // set temperature
     // make interface
     nanoParticle->set_up(salt_conc_in, salt_conc_out, salt_valency_in, salt_valency_out, total_gridpoints,
                          box_radius / unitlength);    // set up properties inside and outside the interface
