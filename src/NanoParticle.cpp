@@ -262,11 +262,10 @@ void NanoParticle::discretize(vector<VERTEX> &s, double radius) {
         exit(1);
     }
 
-    radius = 1.0;
     unsigned int col1;
     double col2, col3, col4, col5, col6, col7, col8;
     while (in >> col1 >> col2 >> col3 >> col4 >> col5 >> col6 >> col7 >> col8)
-        s.push_back(VERTEX(VECTOR3D(radius * col2, radius * col3, radius * col4), radius * radius * col5, VECTOR3D(col6, col7, col8), area_np, bare_charge));
+        s.push_back(VERTEX(VECTOR3D(col2, col3, col4), col5, VECTOR3D(col6, col7, col8), area_np, bare_charge));
 
     if (world.rank() == 0) {
         ofstream listvertices("outfiles/interface.xyz", ios::out);
