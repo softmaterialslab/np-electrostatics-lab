@@ -63,7 +63,7 @@ void cpmd(vector <PARTICLE> &ion, vector <VERTEX> &s, NanoParticle *nanoParticle
     double average_functional_deviation = 0.0;        // average deviation from the B O surface
     double verification_samples = 0;            // number of samples used to verify C P M D evolution
     int moviestart = 0;                    // starting point of the movie
-    int moviefreq = 100;                    // frequency of shooting the movie
+    int moviefreq = cpmdremote.freq * 10;                    // frequency of shooting the movie
 
     double density_profile_samples = 0;            // number of samples used to estimate density profile
 

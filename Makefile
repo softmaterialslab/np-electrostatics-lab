@@ -19,8 +19,7 @@ endif
 	@echo "Ending the build of the $(BASE) directory";
 	@echo "installing the $(PROG) into $(BIN) directory"; cp -f $(BASE)/$(PROG) $(BIN)
 
-install: all
-	create-dirs
+local-install: all create-dirs
 
 cluster-install: create-dirs
 	make CCF=BigRed2 all
@@ -59,7 +58,7 @@ clean:
 	rm -f $(BIN)/$(PROG)
 
 dataclean:
-	rm -f $(BIN)/outfiles/*.dat $(BIN)/outfiles/*.xyz  $(BIN)/outfiles/*.lammpstrj  $(BIN)/datafiles/*.dat verifiles/*.dat $(BIN)/computedfiles/*.dat
+	rm -f $(BIN)/outfiles/*.dat $(BIN)/outfiles/*.xyz  $(BIN)/outfiles/*.lammpstrj  $(BIN)/datafiles/*.dat $(BIN)/verifiles/*.dat $(BIN)/computedfiles/*.dat
 	rm -f $(BIN)/*.log
 	rm -f $(BIN)/*.pbs
 
