@@ -262,6 +262,7 @@ void NanoParticle::discretize(vector<VERTEX> &s, double radius) {
         exit(1);
     }
 
+    radius = 1.0;
     unsigned int col1;
     double col2, col3, col4, col5, col6, col7, col8;
     while (in >> col1 >> col2 >> col3 >> col4 >> col5 >> col6 >> col7 >> col8)
