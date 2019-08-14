@@ -32,9 +32,9 @@
 * Next, go to the bin directory: 
  ```cd bin ```
 * Now you are ready to run the executable with aprun command using the following method:
- * Spehre:
+  * Spehre:
 ```time mpirun -np 2 -N 16 ./np_electrostatics_lab -a 2.6775 -b 14.28 -e 2 -E 78.5 -V -60 -v 1 -g 1082 -m 6 -t 0.001 -s 10000 -p 100 -f 10 -M 6 -T 0.001 -k 0.0025 -q 0.001 -L 5 -l 5 -S 10000000 -P 100000 -F 100 -X 10000 -U 1000 -Y 500000 -W 1000000 -B 0.025```
- * Disk:
+  * Disk:
  ```time mpirun -np 2 -N 16 ./np_electrostatics_lab -a 2.6775 -b 14.28 -e 2 -E 78.5 -V -60 -v 1 -g 1082 -m 6 -t 0.001 -s 10000 -p 100 -f 10 -M 6 -T 0.001 -k 0.0025 -q 0.001 -L 5 -l 5 -S 10000000 -P 100000 -F 100 -X 10000 -U 1000 -Y 500000 -W 1000000 -R 0.1 -B 0.4 -G "Disk"```
 
 
