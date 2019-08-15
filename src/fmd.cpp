@@ -54,7 +54,7 @@ void fmd(vector<VERTEX> &s, vector<PARTICLE> &ion, NanoParticle *nanoParticle, C
         s[k].wmean = 0;
     int samples = 0;                                // number of samples
 
-    fmdremote.extra_compute = 100;                        // new addition, if one wants to have longer fmd since the startind density is not coming out right
+    fmdremote.extra_compute = fmdremote.steps / 10;  // scaling with total fmd steps
 
     // PART II : Propagate
     /*.......................................Fictitious molecular dynamics.......................................*/
